@@ -19,10 +19,10 @@ from EBookParsers.FB2Parser import FB2Parser
 from TTSEngines.TTSLocal import TTSLocal
 
 # debug feature-toggles
-PRE_CLEANUP = False
-CREATE_DIRS = False
-NARRATE_CHAPTERS = False
-RE_ENCODE_MP3 = False
+PRE_CLEANUP = True
+CREATE_DIRS = True
+NARRATE_CHAPTERS = True
+RE_ENCODE_MP3 = True
 CONCATENATE_MP3 = True
 CONVERT_TO_MP4 = True
 POST_CLEANUP = False
@@ -108,6 +108,12 @@ if __name__ == '__main__':
   if CREATE_DIRS:
       os.makedirs(os.path.join(output_dir, 'tmp/resampled'))
   os.chdir(output_dir)
+
+  # extract the book cover image
+  album_cover = ""
+  if parser.cover_image:
+    parser.saveCoverImageToFile('tmp/cover.jpg')
+  album_cover = 'tmp/cover.jpg'
 
   tts = TTSLocal()
   chapter_no = 1
@@ -297,13 +303,13 @@ for audiobook_part in audiobook_parts:
     # audio['purl'] = item_url
 
     print("Adding audiobook cover image")
-    # # add album cover to the audiobook
-    # if ".PNG" in album_cover.upper():
-    #     image_type = 14
-    # else:
-    #     image_type = 13
-    # data = open(os.path.join(album_cover), 'rb').read()
-    # audio["covr"] = [MP4Cover(data, image_type)]
+    # add album cover to the audiobook
+    if ".PNG" in album_cover.upper():
+        image_type = 14
+    else:
+        image_type = 13
+    data = open(os.path.join(album_cover), 'rb').read()
+    audio["covr"] = [MP4Cover(data, image_type)]
 
     audio.save()
 

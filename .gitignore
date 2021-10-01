@@ -1,2 +1,3 @@
 *.fb2
 output/
+__pycache__/

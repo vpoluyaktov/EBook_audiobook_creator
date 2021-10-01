@@ -1,6 +1,7 @@
 
 import xml.etree.ElementTree as ET
 import re
+import base64
 
 class FB2Parser:
   def __init__(self, filename):
@@ -32,6 +33,13 @@ class FB2Parser:
         section_text = self.treeToText(self._fb2)
         section_id = 0
         self.book_sections.append({'section_title':section_title, 'section_id': section_id, 'section_text': section_text})
+
+    # extract cover image if exists
+    if self._fb2.find('./binary') != None:
+      binary = self._fb2.find('./binary')
+      if 'content-type' in binary.attrib and 'id' in binary.attrib \
+        and binary.attrib['content-type'] == 'image/jpeg' and binary.attrib['id'] == 'cover.jpg':
+          self.cover_image = binary.text
           
   def treeToText(self, ET):
     text = ""
@@ -46,3 +54,8 @@ class FB2Parser:
     file = open(filename, "w")
     file.write(text)
     file.close  
+
+  def saveCoverImageToFile(self, filename):
+    file = open(filename, "wb")
+    file.write(base64.b64decode(self.cover_image))
+    file.close    
