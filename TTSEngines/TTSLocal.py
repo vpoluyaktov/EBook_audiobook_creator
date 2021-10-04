@@ -1,6 +1,6 @@
 import pyttsx3
 
-SPEAK_RATE = 180
+SPEAK_RATE = 160
 
 class TTSLocal:
   def __init__(self):

@@ -21,10 +21,10 @@ from TTSEngines.TTSLocal import TTSLocal
 # debug feature-toggles
 PRE_CLEANUP = True
 CREATE_DIRS = True
-NARRATE_CHAPTERS = True
-RE_ENCODE_MP3 = True
-CONCATENATE_MP3 = True
-CONVERT_TO_MP4 = True
+NARRATE_CHAPTERS = False
+RE_ENCODE_MP3 = False
+CONCATENATE_MP3 = False
+CONVERT_TO_MP4 = False
 POST_CLEANUP = False
 
 # Experimental features. Use with caution
@@ -112,7 +112,7 @@ if __name__ == '__main__':
   # extract the book cover image
   album_cover = ""
   if parser.cover_image:
-    parser.saveCoverImageToFile('tmp/cover.jpg')
+    parser.save_cover_image_to_file('tmp/cover.jpg')
   album_cover = 'tmp/cover.jpg'
 
   tts = TTSLocal()
@@ -123,13 +123,14 @@ if __name__ == '__main__':
     print('Narrating chapter {0}'.format(chapter['section_title']))
     filename = 'chapter_' + str(chapter_no)
     text = chapter['section_text']    
-    parser.saveTextToFile(text, 'tmp/' + filename + '.txt')
+    parser.save_text_to_file(text, 'tmp/' + filename + '.txt')
     if NARRATE_CHAPTERS:
       tts.saveTextToMp3(text, 'tmp/' + filename + '.mp3')   
     mp3_file_names.append(filename + '.mp3') 
     chapter_names.append(chapter['section_title'])
     chapter_no += 1
 
+exit()
 
 # generated silence .mp3 to fill gaps between chapters
 os.system('ffmpeg -nostdin -f lavfi -i anullsrc=r={}:cl={} -t {} -hide_banner -loglevel fatal -nostats -y -ab {} -ar {} -vn "tmp/resampled/gap.mp3"'.format(SAMPLE_RATE, OUTPUT_MODE, GAP_DURATION, BITRATE, SAMPLE_RATE))
@@ -145,7 +146,7 @@ for file_name in mp3_file_names:
         os.makedirs(os.path.join('tmp/resampled', os.path.dirname(file_name))) # create dir structure for complex file names
     print("{:6d}/{}: {:67}".format(file_number, len(mp3_file_names), file_name + '...'), end = " ", flush=True)
     if RE_ENCODE_MP3:
-        os.system('ffmpeg -nostdin -i "{}" -hide_banner -loglevel fatal -nostats -y -ab {} -ar {} -vn "tmp/resampled/{}"'.format(file_name, BITRATE, SAMPLE_RATE, file_name))
+        os.system('ffmpeg -nostdin -i "tmp/{}" -hide_banner -loglevel fatal -nostats -y -ab {} -ar {} -vn "tmp/resampled/{}"'.format(file_name, BITRATE, SAMPLE_RATE, file_name))
     print("OK")
     file_number += 1
 
@@ -303,13 +304,14 @@ for audiobook_part in audiobook_parts:
     # audio['purl'] = item_url
 
     print("Adding audiobook cover image")
-    # add album cover to the audiobook
-    if ".PNG" in album_cover.upper():
-        image_type = 14
-    else:
-        image_type = 13
-    data = open(os.path.join(album_cover), 'rb').read()
-    audio["covr"] = [MP4Cover(data, image_type)]
+    if album_cover != "":
+      # add album cover to the audiobook
+      if ".PNG" in album_cover.upper():
+          image_type = 14
+      else:
+          image_type = 13
+      data = open(os.path.join(album_cover), 'rb').read()
+      audio["covr"] = [MP4Cover(data, image_type)]
 
     audio.save()
 
