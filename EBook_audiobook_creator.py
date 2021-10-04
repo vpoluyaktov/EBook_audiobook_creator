@@ -34,7 +34,7 @@ BITRATE = "128k"
 SAMPLE_RATE = "44100"
 BIT_DEPTH = "s16"
 OUTPUT_MODE="mono" # mono / stereo
-GAP_DURATION = 5 # Duration of a gaps between chapters
+GAP_DURATION = 2 # Duration of a gaps between chapters
 part_size_human = "2 GB" # default audiobook part size
 
 # small adjustment (don't ask me why - just noticed mutagen returns slighly incorrect value)
