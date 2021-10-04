@@ -66,6 +66,9 @@ class FB2Parser:
       for child in ET:     
         if child.tag == 'section':
           break 
+        elif child.tag == 'table':
+          text += "\nТАБЛИЦА ПРОПУЩЕНА.\n\n"
+          continue
         else: 
           child_text = child.text if child.text else ''
           subchild_text = self.tree_to_text(child)
@@ -86,13 +89,14 @@ class FB2Parser:
 
   # extract cover image if exists
   def _extract_cover_image(self):
-    self.cover_image = None
-    if self._fb2.find('./binary') != None:
-      binary = self._fb2.find('./binary')
-      if 'content-type' in binary.attrib and 'id' in binary.attrib \
-        and (binary.attrib['content-type'] == 'image/jpeg' or binary.attrib['content-type'] == 'image/jpg') \
-          and binary.attrib['id'] == 'cover.jpg':
-          self.cover_image = binary.text
+    self.cover_image = None    
+    cover_image_name = self._fb2.find('./description/title-info/coverpage/image').attrib['{http://www.w3.org/1999/xlink}href']
+    if cover_image_name:
+      for binary in self._fb2.findall('./binary'):
+        if 'content-type' in binary.attrib and 'id' in binary.attrib \
+          and (binary.attrib['content-type'] == 'image/jpeg' or binary.attrib['content-type'] == 'image/jpg') \
+            and binary.attrib['id'] == cover_image_name.replace('#', ''):
+            self.cover_image = binary.text
 
   def save_text_to_file(self, text, filename):
     file = open(filename, "w")

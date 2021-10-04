@@ -21,10 +21,10 @@ from TTSEngines.TTSLocal import TTSLocal
 # debug feature-toggles
 PRE_CLEANUP = True
 CREATE_DIRS = True
-NARRATE_CHAPTERS = False
-RE_ENCODE_MP3 = False
-CONCATENATE_MP3 = False
-CONVERT_TO_MP4 = False
+NARRATE_CHAPTERS = True
+RE_ENCODE_MP3 = True
+CONCATENATE_MP3 = True
+CONVERT_TO_MP4 = True
 POST_CLEANUP = False
 
 # Experimental features. Use with caution
@@ -99,7 +99,7 @@ if __name__ == '__main__':
   book_title = parser.book_title
 
   print("\n\nProcessing book:\n{0} - {1}\n".format(book_author, book_title))
-  print("Annotation:\n", parser.book_annotation)
+  print("Annotation:\n", parser.book_annotation, '\n\n')
 
   # clean/create output dir
   if PRE_CLEANUP:
@@ -130,8 +130,6 @@ if __name__ == '__main__':
     chapter_names.append(chapter['section_title'])
     chapter_no += 1
 
-exit()
-
 # generated silence .mp3 to fill gaps between chapters
 os.system('ffmpeg -nostdin -f lavfi -i anullsrc=r={}:cl={} -t {} -hide_banner -loglevel fatal -nostats -y -ab {} -ar {} -vn "tmp/resampled/gap.mp3"'.format(SAMPLE_RATE, OUTPUT_MODE, GAP_DURATION, BITRATE, SAMPLE_RATE))
 os.system('ffmpeg -nostdin -f lavfi -i anullsrc=r={}:cl={} -t {} -hide_banner -loglevel fatal -nostats -y -ab {} -ar {} -vn "tmp/resampled/half_of_gap.mp3"'.format(SAMPLE_RATE, OUTPUT_MODE, GAP_DURATION / 2, BITRATE, SAMPLE_RATE))
@@ -149,7 +147,6 @@ for file_name in mp3_file_names:
         os.system('ffmpeg -nostdin -i "tmp/{}" -hide_banner -loglevel fatal -nostats -y -ab {} -ar {} -vn "tmp/resampled/{}"'.format(file_name, BITRATE, SAMPLE_RATE, file_name))
     print("OK")
     file_number += 1
-
 
 # calculate total audiobook size, split the books on parts if needed
 total_size = 0
