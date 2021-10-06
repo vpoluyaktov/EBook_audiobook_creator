@@ -67,17 +67,23 @@ class FB2Parser:
         if child.tag == 'section':
           break 
         elif child.tag == 'table':
-          text += "\nТАБЛИЦА ПРОПУЩЕНА.\n\n"
+          text += "\nТАБЛИЦА ОПУЩЕНА.\n\n"
           continue
+        elif child.tag == 'a':
+          text += '. '
+          continue # skip footnotes and links
+        elif child.tag == 'image':
+          text += "\nИллюстрация.\n\n"
+          continue # skip images
         else: 
           child_text = child.text if child.text else ''
           subchild_text = self.tree_to_text(child)
           tail_text = child.tail if child.tail else ''
           text += child_text + subchild_text + tail_text   
-        if ET.tag == 'p' and child_text != '' and child_text[-1] != '.':
-            text = text.strip() +'.'    
+        if child.tag == 'p' and child_text != '' and child_text[-1] != '.':
+            text = text.strip() +'. '
         if (ET.tag == 'title' or child.tag == 'subtitle') and child_text != '':
-            text = '\n' + text.strip() +'.\n\n'  
+            text = '\n' + text.strip() +'\n\n'
     return text  
 
   def parse_notes(self, ET):
