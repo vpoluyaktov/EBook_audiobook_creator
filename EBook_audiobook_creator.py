@@ -99,7 +99,7 @@ if __name__ == '__main__':
   book_title = parser.book_title
 
   print("\n\nProcessing book:\n{0} - {1}\n".format(book_author, book_title))
-  print("Annotation:\n", parser.book_annotation, '\n\n')
+  print("Annotation:\n\n", parser.book_annotation, '\n\n')
 
   # clean/create output dir
   if PRE_CLEANUP:
@@ -231,7 +231,7 @@ for audiobook_part in audiobook_parts:
 
             if not chapter_title:
                 chapter_title = "Chapter {}".format(chapter_number)
-            chapter_title = chapter_title.strip();
+            chapter_title = chapter_title;
 
             mp3_list_file.write("file 'tmp/resampled/gap.mp3'\n")
             chapter_end_time += GAP_DURATION + (MP3_DURATION_ADJUSTMENT / 1000)

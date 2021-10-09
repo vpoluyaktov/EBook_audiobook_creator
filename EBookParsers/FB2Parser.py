@@ -51,40 +51,54 @@ class FB2Parser:
 
   def parse_title(self, title_element, depth):
     text = ""
+    TOC = True
     if title_element is not None:
       for child in title_element:      
-        text += (child.text if child.text else '') + self.tree_to_text(child) + (child.tail if child.tail else '')
+        text += (child.text if child.text else '') + self.tree_to_text(child, TOC) + (child.tail if child.tail else '')
         if child.tag == 'p':
           text = (text.rstrip() + '. ').replace('..', '.')
     text = text.rstrip()      
-    title = text.rjust(depth * 2 + len(text), ' ')   
+    title = text.rjust(depth * 4 + len(text), '\u00A0')   
     return title
 
-  def tree_to_text(self, ET):
+  def tree_to_text(self, ET, TOC = False):
     text = ""
     if ET is not None:
       for child in ET:     
         if child.tag == 'section':
           break 
-        elif child.tag == 'table':
+        elif child.tag == 'table' and not TOC:
           text += "\nТАБЛИЦА ОПУЩЕНА.\n\n"
           continue
-        elif child.tag == 'a':
-          text += '. '
-          continue # skip footnotes and links
-        elif child.tag == 'image':
+        elif child.tag == 'image' and not TOC:
           text += "\nИллюстрация.\n\n"
-          continue # skip images
+          continue # skip images        
+        elif child.tag == 'a':
+          text += ". "
+          continue # skip footnotes and links
+        elif child.tag == 'empty-line':
+          text += "\n\n"
+
         else: 
-          child_text = child.text if child.text else ''
-          subchild_text = self.tree_to_text(child)
-          tail_text = child.tail if child.tail else ''
-          text += child_text + subchild_text + tail_text   
-        if child.tag == 'p' and child_text != '' and child_text[-1] != '.':
-            text = text.strip() +'. '
-        if (ET.tag == 'title' or child.tag == 'subtitle') and child_text != '':
-            text = '\n' + text.strip() +'\n\n'
+          child_text = child.text.strip() if child.text else ''
+          subchild_text = self.tree_to_text(child, TOC)
+          tail_text = child.tail.strip() if child.tail else ''
+
+          subtree_text = child_text + subchild_text + tail_text
+          if (child.tag == 'p'):
+            subtree_text = '    ' +self.add_period(subtree_text) + '\n\n'
+          if (child.tag == 'title' or child.tag == 'subtitle'):
+            subtree_text = '\n\n' + self.add_period(subtree_text) +'\n\n'
+
+          text += subtree_text   
+
     return text  
+
+  def add_period(self, text):
+    if text != None and text != '':
+      if text.strip()[-1] != '.' and text.strip()[-1] != '?' and text.strip()[-1] != '?' :
+        text = text.strip() +'. '
+    return text    
 
   def parse_notes(self, ET):
     text = ""
