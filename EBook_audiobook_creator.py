@@ -34,7 +34,7 @@ BITRATE = "128k"
 SAMPLE_RATE = "44100"
 BIT_DEPTH = "s16"
 OUTPUT_MODE="mono" # mono / stereo
-GAP_DURATION = 5 # Duration of a gaps between chapters
+GAP_DURATION = 2 # Duration of a gaps between chapters
 part_size_human = "2 GB" # default audiobook part size
 
 # small adjustment (don't ask me why - just noticed mutagen returns slighly incorrect value)
@@ -99,7 +99,7 @@ if __name__ == '__main__':
   book_title = parser.book_title
 
   print("\n\nProcessing book:\n{0} - {1}\n".format(book_author, book_title))
-  print("Annotation:\n", parser.book_annotation)
+  print("Annotation:\n\n", parser.book_annotation, '\n\n')
 
   # clean/create output dir
   if PRE_CLEANUP:
@@ -112,7 +112,7 @@ if __name__ == '__main__':
   # extract the book cover image
   album_cover = ""
   if parser.cover_image:
-    parser.saveCoverImageToFile('tmp/cover.jpg')
+    parser.save_cover_image_to_file('tmp/cover.jpg')
   album_cover = 'tmp/cover.jpg'
 
   tts = TTSLocal()
@@ -123,13 +123,12 @@ if __name__ == '__main__':
     print('Narrating chapter {0}'.format(chapter['section_title']))
     filename = 'chapter_' + str(chapter_no)
     text = chapter['section_text']    
-    parser.saveTextToFile(text, 'tmp/' + filename + '.txt')
+    parser.save_text_to_file(text, 'tmp/' + filename + '.txt')
     if NARRATE_CHAPTERS:
       tts.saveTextToMp3(text, 'tmp/' + filename + '.mp3')   
     mp3_file_names.append(filename + '.mp3') 
     chapter_names.append(chapter['section_title'])
     chapter_no += 1
-
 
 # generated silence .mp3 to fill gaps between chapters
 os.system('ffmpeg -nostdin -f lavfi -i anullsrc=r={}:cl={} -t {} -hide_banner -loglevel fatal -nostats -y -ab {} -ar {} -vn "tmp/resampled/gap.mp3"'.format(SAMPLE_RATE, OUTPUT_MODE, GAP_DURATION, BITRATE, SAMPLE_RATE))
@@ -145,10 +144,9 @@ for file_name in mp3_file_names:
         os.makedirs(os.path.join('tmp/resampled', os.path.dirname(file_name))) # create dir structure for complex file names
     print("{:6d}/{}: {:67}".format(file_number, len(mp3_file_names), file_name + '...'), end = " ", flush=True)
     if RE_ENCODE_MP3:
-        os.system('ffmpeg -nostdin -i "{}" -hide_banner -loglevel fatal -nostats -y -ab {} -ar {} -vn "tmp/resampled/{}"'.format(file_name, BITRATE, SAMPLE_RATE, file_name))
+        os.system('ffmpeg -nostdin -i "tmp/{}" -hide_banner -loglevel fatal -nostats -y -ab {} -ar {} -vn "tmp/resampled/{}"'.format(file_name, BITRATE, SAMPLE_RATE, file_name))
     print("OK")
     file_number += 1
-
 
 # calculate total audiobook size, split the books on parts if needed
 total_size = 0
@@ -233,7 +231,7 @@ for audiobook_part in audiobook_parts:
 
             if not chapter_title:
                 chapter_title = "Chapter {}".format(chapter_number)
-            chapter_title = chapter_title.strip();
+            chapter_title = chapter_title;
 
             mp3_list_file.write("file 'tmp/resampled/gap.mp3'\n")
             chapter_end_time += GAP_DURATION + (MP3_DURATION_ADJUSTMENT / 1000)
@@ -303,13 +301,14 @@ for audiobook_part in audiobook_parts:
     # audio['purl'] = item_url
 
     print("Adding audiobook cover image")
-    # add album cover to the audiobook
-    if ".PNG" in album_cover.upper():
-        image_type = 14
-    else:
-        image_type = 13
-    data = open(os.path.join(album_cover), 'rb').read()
-    audio["covr"] = [MP4Cover(data, image_type)]
+    if album_cover != "":
+      # add album cover to the audiobook
+      if ".PNG" in album_cover.upper():
+          image_type = 14
+      else:
+          image_type = 13
+      data = open(os.path.join(album_cover), 'rb').read()
+      audio["covr"] = [MP4Cover(data, image_type)]
 
     audio.save()
 
