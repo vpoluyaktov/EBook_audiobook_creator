@@ -35,7 +35,7 @@ SAMPLE_RATE = "44100"
 BIT_DEPTH = "s16"
 OUTPUT_MODE="mono" # mono / stereo
 GAP_DURATION = 2 # Duration of a gaps between chapters
-part_size_human = "2 GB" # default audiobook part size
+part_size_human = "5 GB" # default audiobook part size
 
 # small adjustment (don't ask me why - just noticed mutagen returns slighly incorrect value)
 # if you hear the end of previous chapter at the beginning of new one - slightly increase the value of this parameter
@@ -93,6 +93,7 @@ if __name__ == '__main__':
   else:  
     ebook_file_name = sys.argv[1];
   parser = FB2Parser(ebook_file_name)
+  parser.TOC_max_depth = 2
   parser.parse()
 
   book_author = parser.book_author
@@ -112,8 +113,7 @@ if __name__ == '__main__':
   # extract the book cover image
   album_cover = ""
   if parser.cover_image:
-    parser.save_cover_image_to_file('tmp/cover.jpg')
-  album_cover = 'tmp/cover.jpg'
+    album_cover = parser.save_cover_image_to_file('tmp/')
 
   tts = TTSLocal()
   chapter_no = 1
@@ -150,7 +150,7 @@ for file_name in mp3_file_names:
 
 # calculate total audiobook size, split the books on parts if needed
 total_size = 0
-part_size = humanfriendly.parse_size('2Gb')
+part_size = humanfriendly.parse_size(part_size_human)
 current_part_size = 0
 file_number = 1
 part_number = 1
