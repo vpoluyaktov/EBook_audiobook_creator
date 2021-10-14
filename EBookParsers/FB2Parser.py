@@ -34,23 +34,27 @@ class FB2Parser:
         section_text = self.parse_notes(body)
         self.book_sections.append({'section_title':section_title, 'section_id': section_id, 'section_text': section_text})
       elif body.find('./section'):
-        depth = 1
+        TOC_depth = 0
         for section_id, section in enumerate(body.findall('./section')):
-          self.parse_section(section_id, section, depth)
+          self.parse_section(section_id, section, TOC_depth)
 
 
     # extract cover image if exists
     self._extract_cover_image()
           
-  def parse_section(self, section_id, section, depth):
-    section_title = self.parse_title(section.find('./title'), depth)
-    section_text = self.tree_to_text(section)
+  def parse_section(self, section_id, section, TOC_depth):
+    TOC_depth += 1
+    section_title = self.parse_title(section.find('./title'), TOC_depth)
+
+    if TOC_depth < self.TOC_max_depth:   
+      section_text = self.tree_to_text(section)
+    else:
+      section_text = self.tree_to_text(section, False, True)
     self.book_sections.append({'section_title':section_title, 'section_id': section_id, 'section_text': section_text})
-    # print(section_title)
-    if depth < self.TOC_max_depth and section.find('./section'):
-      depth += 1
+
+    if TOC_depth < self.TOC_max_depth:  
       for section_id, section in enumerate(section.findall('./section')):
-        self.parse_section(section_id, section, depth)
+        self.parse_section(section_id, section, TOC_depth)
 
   def parse_title(self, title_element, depth):
     text = ""
@@ -64,11 +68,11 @@ class FB2Parser:
     title = text.rjust(depth * 4 + len(text), '\u00A0')   
     return title
 
-  def tree_to_text(self, ET, TOC = False):
+  def tree_to_text(self, ET, TOC = False, combine_child_sections = False):
     text = ""
     if ET is not None:
       for child in ET:     
-        if child.tag == 'section':
+        if child.tag == 'section' and not combine_child_sections:
           break 
         elif child.tag == 'table' and not TOC:
           text += "\nТАБЛИЦА ОПУЩЕНА.\n\n"

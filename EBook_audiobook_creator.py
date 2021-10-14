@@ -29,6 +29,7 @@ POST_CLEANUP = False
 
 # Experimental features. Use with caution
 EDIT_CHAPTER_NAMES = False
+TOC_MAX_DEPTH = 2
 
 BITRATE = "128k"
 SAMPLE_RATE = "44100"
@@ -93,7 +94,7 @@ if __name__ == '__main__':
   else:  
     ebook_file_name = sys.argv[1];
   parser = FB2Parser(ebook_file_name)
-  parser.TOC_max_depth = 2
+  parser.TOC_max_depth = TOC_MAX_DEPTH
   parser.parse()
 
   book_author = parser.book_author
