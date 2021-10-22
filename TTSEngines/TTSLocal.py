@@ -1,5 +1,6 @@
 import pyttsx3
 import os
+import re
 
 SPEAK_RATE = 180
 DICTIONARY_NAME = '../TTSEngines/TTSLocal.dict'
@@ -37,15 +38,17 @@ class TTSLocal:
       i += 1 
 
   def onEnd(self, name, completed):
-    self.engine.endLoop()
+    try:
+      self.engine.endLoop()
+    except:
+      None
 
   def saveTextToMp3(self, text, filename):
-    text = self.fix_pronunciation(text)
     self.engine.connect('finished-utterance', self.onEnd)
     self.engine.save_to_file(text, filename)
     self.engine.startLoop()
 
   def fix_pronunciation(self, text):
     for tuple in self.dictionary:
-      text = text.replace(tuple[0], tuple[1])
+      text = re.sub(tuple[0], tuple[1], text)
     return text  

@@ -5,6 +5,8 @@ import base64
 
 class FB2Parser:
 
+  cleanup_dictionary = [ ('\u00A0', ' ')]
+
   def __init__(self, filename):
     self._fb2 = ET.parse(filename).getroot()
     for element in self._fb2.iter():
@@ -99,6 +101,8 @@ class FB2Parser:
 
           text += subtree_text   
 
+          text = self.cleanup_text(text)
+
     return text  
 
   def add_period(self, text):
@@ -125,6 +129,12 @@ class FB2Parser:
             and binary.attrib['id'] == cover_image_name.replace('#', ''):
             self.cover_image = binary.text
             self.cover_image_name = cover_image_name.replace('#', '')
+
+
+  def cleanup_text(self, text):
+    for tuple in self.cleanup_dictionary:
+      text = text.replace(tuple[0], tuple[1])
+    return text  
 
   def save_text_to_file(self, text, filename):
     file = open(filename, "w")

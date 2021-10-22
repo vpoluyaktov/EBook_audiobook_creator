@@ -123,7 +123,7 @@ if __name__ == '__main__':
   for chapter in parser.book_sections:
     print('Narrating chapter {0}'.format(chapter['section_title']))
     filename = 'chapter_' + str(chapter_no)
-    text = chapter['section_text']    
+    text = tts.fix_pronunciation(chapter['section_text'])    
     parser.save_text_to_file(text, 'tmp/' + filename + '.txt')
     if NARRATE_CHAPTERS:
       tts.saveTextToMp3(text, 'tmp/' + filename + '.mp3')   
