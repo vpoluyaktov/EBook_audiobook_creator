@@ -20,7 +20,6 @@ class TTSLocal:
   def load_pronunciation_dictionary(self):
     self.dictionary = []
     try:
-      print(os.getcwd())
       dict_file = open(DICTIONARY_NAME, 'r')
       line = dict_file.readline()      
       while line:
