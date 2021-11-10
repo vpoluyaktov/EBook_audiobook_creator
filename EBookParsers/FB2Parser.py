@@ -82,18 +82,18 @@ class FB2Parser:
         elif child.tag == 'image' and not TOC:
           text += "\nИллюстрация.\n\n"
           continue # skip images        
-        elif child.tag == 'a':
-          text += ". "
-          continue # skip footnotes and links
         elif child.tag == 'empty-line':
           text += "\n\n"
-
         else: 
-          child_text = child.text.strip() if child.text else ''
-          subchild_text = self.tree_to_text(child, TOC)
+          if child.tag == 'a':
+            child_text = '' # skip footnotes and links
+            subchild_text = ''
+          else: 
+            child_text = child.text.strip() if child.text else ''
+            subchild_text = self.tree_to_text(child, TOC)
           tail_text = child.tail.strip() if child.tail else ''
 
-          subtree_text = child_text + subchild_text + tail_text
+          subtree_text = child_text + ' ' + subchild_text + ' ' + tail_text
           if (child.tag == 'p'):
             subtree_text = '    ' +self.add_period(subtree_text) + '\n\n'
           if (child.tag == 'title' or child.tag == 'subtitle'):

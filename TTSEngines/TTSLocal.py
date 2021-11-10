@@ -3,16 +3,17 @@ import os
 import re
 
 SPEAK_RATE = 180
-DICTIONARY_NAME = '../TTSEngines/TTSLocal.dict'
+DICTIONARY_DIR = '../TTSEngines/Dict/TTSLocal'
 
 class TTSLocal:
-  def __init__(self):
+  def __init__(self, dict_file_name):
     self.engine = pyttsx3.init()                      
 
     self.engine.setProperty('rate', SPEAK_RATE)  
     self.engine.setProperty('volume',1.0)    # setting up volume level  between 0 and 1
     self.voices = self.engine.getProperty('voices') 
     self.engine.setProperty('voice', self.voices[5].id)
+    self.dict_file_name = DICTIONARY_DIR + '/' +  dict_file_name;
 
     self.load_pronunciation_dictionary()
 
@@ -20,10 +21,10 @@ class TTSLocal:
   def load_pronunciation_dictionary(self):
     self.dictionary = []
     try:
-      dict_file = open(DICTIONARY_NAME, 'r')
+      dict_file = open(self.dict_file_name, 'r')
       line = dict_file.readline()      
       while line:
-        tuple = line.split("|")
+        tuple = line.split("~")
         self.dictionary.append(tuple)
         line = dict_file.readline()
     finally:
@@ -49,5 +50,5 @@ class TTSLocal:
 
   def fix_pronunciation(self, text):
     for tuple in self.dictionary:
-      text = re.sub(tuple[0], tuple[1], text)
+      text = re.sub(tuple[1], tuple[2], text)
     return text  

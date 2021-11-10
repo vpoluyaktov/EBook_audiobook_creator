@@ -116,7 +116,8 @@ if __name__ == '__main__':
   if parser.cover_image:
     album_cover = parser.save_cover_image_to_file('tmp/')
 
-  tts = TTSLocal()
+  dictionary_file = os.path.splitext(os.path.basename(ebook_file_name))[0] + '.dict'
+  tts = TTSLocal(dictionary_file)
   chapter_no = 1
   mp3_file_names = []
   chapter_names = []
