@@ -118,6 +118,7 @@ if __name__ == '__main__':
 
   dictionary_file = os.path.splitext(os.path.basename(ebook_file_name))[0] + '.dict'
   tts = TTSLocal(dictionary_file)
+  # tts.getVoicesList()
   chapter_no = 1
   mp3_file_names = []
   chapter_names = []
@@ -132,7 +133,7 @@ if __name__ == '__main__':
     chapter_names.append(chapter['section_title'])
     chapter_no += 1
 
-# generated silence .mp3 to fill gaps between chapters
+# generate silence .mp3 to fill gaps between chapters
 os.system('ffmpeg -nostdin -f lavfi -i anullsrc=r={}:cl={} -t {} -hide_banner -loglevel fatal -nostats -y -ab {} -ar {} -vn "tmp/resampled/gap.mp3"'.format(SAMPLE_RATE, OUTPUT_MODE, GAP_DURATION, BITRATE, SAMPLE_RATE))
 os.system('ffmpeg -nostdin -f lavfi -i anullsrc=r={}:cl={} -t {} -hide_banner -loglevel fatal -nostats -y -ab {} -ar {} -vn "tmp/resampled/half_of_gap.mp3"'.format(SAMPLE_RATE, OUTPUT_MODE, GAP_DURATION / 2, BITRATE, SAMPLE_RATE))
 

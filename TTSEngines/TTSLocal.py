@@ -2,6 +2,11 @@ import pyttsx3
 import os
 import re
 
+# VOICE_ID = 5    # 5:      ru_RU    Alyona Infovox iVox HQ
+# VOICE_ID = 44     # 44:     ru_RU    Milena
+VOICE_ID = 66     # 66:     en_US    Will Infovox iVox HQ
+# VOICE_ID = 71     # 71:     ru_RU    Yuri
+
 SPEAK_RATE = 180
 DICTIONARY_DIR = '../TTSEngines/Dict/TTSLocal'
 
@@ -12,7 +17,7 @@ class TTSLocal:
     self.engine.setProperty('rate', SPEAK_RATE)  
     self.engine.setProperty('volume',1.0)    # setting up volume level  between 0 and 1
     self.voices = self.engine.getProperty('voices') 
-    self.engine.setProperty('voice', self.voices[5].id)
+    self.engine.setProperty('voice', self.voices[VOICE_ID].id)
     self.dict_file_name = DICTIONARY_DIR + '/' +  dict_file_name;
 
     self.load_pronunciation_dictionary()
@@ -20,6 +25,7 @@ class TTSLocal:
 
   def load_pronunciation_dictionary(self):
     self.dictionary = []
+    dict_file = None
     try:
       dict_file = open(self.dict_file_name, 'r')
       line = dict_file.readline()      
@@ -27,8 +33,11 @@ class TTSLocal:
         tuple = line.split("~")
         self.dictionary.append(tuple)
         line = dict_file.readline()
+    except Exception:
+      None
     finally:
-      dict_file.close()
+      if dict_file:
+        dict_file.close()
 
   def getVoicesList(self):
     voices = self.engine.getProperty('voices')     
