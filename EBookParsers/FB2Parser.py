@@ -1,4 +1,3 @@
-
 import xml.etree.ElementTree as ET
 import re
 import base64
@@ -7,13 +6,19 @@ class FB2Parser:
 
   cleanup_dictionary = [ ('\u00A0', ' ')]
 
-  def __init__(self, filename):
+  def __init__(self):
+    self.TOC_max_depth = 3
+    self.book_title = None
+    self.book_author = None
+    self.book_annotation = None
+    self.cover_image = None
+    self.book_chapters = []
+
+  def parse(self, filename):
     self._fb2 = ET.parse(filename).getroot()
     for element in self._fb2.iter():
       element.tag = element.tag.partition('}')[-1]
-    self.TOC_max_depth = 3
 
-  def parse(self):
     # book metadata
     self.book_title = self._fb2.find('./description/title-info/book-title').text
     self.book_author = (self._fb2.find('./description/title-info/author/first-name').text
@@ -21,42 +26,41 @@ class FB2Parser:
     self.book_annotation = self.tree_to_text(self._fb2.find('./description/title-info/annotation')).strip()
 
     # book sections
-    self.book_bodies = []
-    self.book_sections = []
+    self.book_chapters = []
     for body_id, body in enumerate(self._fb2.findall('./body')):
       if body.find('./title'): # first title
-        section_title = self.parse_title(body.find('./title'), 0)
-        section_text = self.tree_to_text(body.find('./title'))
-        section_id = 0
-        self.book_sections.append({'section_title':section_title, 'section_id': section_id, 'section_text': section_text})
+        chapter_title = self.parse_title(body.find('./title'), 0)
+        chapter_text = self.tree_to_text(body.find('./title'))
+        chapter_id = 0
+        self.book_chapters.append({'chapter_title':chapter_title, 'chapter_id': chapter_id, 'chapter_text': chapter_text})
       # note section at the end of a book
       if 'name' in body.attrib and body.attrib['name'] == "notes":
-        section_id = 0
-        section_title = self.parse_title(body.find('./title'), 0)
-        section_text = self.parse_notes(body)
-        self.book_sections.append({'section_title':section_title, 'section_id': section_id, 'section_text': section_text})
+        chapter_id = 0
+        chapter_title = self.parse_title(body.find('./title'), 0)
+        chapter_text = self.parse_notes(body)
+        self.book_chapters.append({'chapter_title':chapter_title, 'chapter_id': chapter_id, 'chapter_text': chapter_text})
       elif body.find('./section'):
         TOC_depth = 0
-        for section_id, section in enumerate(body.findall('./section')):
-          self.parse_section(section_id, section, TOC_depth)
+        for chapter_id, section in enumerate(body.findall('./section')):
+          self.parse_section(chapter_id, section, TOC_depth)
 
 
     # extract cover image if exists
     self._extract_cover_image()
           
-  def parse_section(self, section_id, section, TOC_depth):
+  def parse_section(self, chapter_id, section, TOC_depth):
     TOC_depth += 1
-    section_title = self.parse_title(section.find('./title'), TOC_depth)
+    chapter_title = self.parse_title(section.find('./title'), TOC_depth)
 
     if TOC_depth < self.TOC_max_depth:   
-      section_text = self.tree_to_text(section)
+      chapter_text = self.tree_to_text(section)
     else:
-      section_text = self.tree_to_text(section, False, True)
-    self.book_sections.append({'section_title':section_title, 'section_id': section_id, 'section_text': section_text})
+      chapter_text = self.tree_to_text(section, False, True)
+    self.book_chapters.append({'chapter_title':chapter_title, 'chapter_id': chapter_id, 'chapter_text': chapter_text})
 
     if TOC_depth < self.TOC_max_depth:  
-      for section_id, section in enumerate(section.findall('./section')):
-        self.parse_section(section_id, section, TOC_depth)
+      for chapter_id, section in enumerate(section.findall('./section')):
+        self.parse_section(chapter_id, section, TOC_depth)
 
   def parse_title(self, title_element, depth):
     text = ""
