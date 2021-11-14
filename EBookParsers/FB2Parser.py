@@ -8,10 +8,10 @@ class FB2Parser:
 
   def __init__(self):
     self.TOC_max_depth = 3
-    self.book_title = None
-    self.book_author = None
-    self.book_annotation = None
-    self.cover_image = None
+    self.book_title = ''
+    self.book_author = ''
+    self.book_annotation = ''
+    self.cover_image = b''
     self.book_chapters = []
 
   def parse(self, filename):

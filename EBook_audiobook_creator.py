@@ -21,7 +21,7 @@ from TTSEngines.TTSLocal import TTSLocal
 # debug feature-toggles
 PRE_CLEANUP = True
 CREATE_DIRS = True
-NARRATE_CHAPTERS = True
+NARRATE_CHAPTERS = False
 RE_ENCODE_MP3 = True
 CONCATENATE_MP3 = True
 CONVERT_TO_MP4 = True
@@ -29,7 +29,7 @@ POST_CLEANUP = False
 
 # Experimental features. Use with caution
 EDIT_CHAPTER_NAMES = False
-TOC_MAX_DEPTH = 2
+TOC_MAX_DEPTH = 3
 
 BITRATE = "128k"
 SAMPLE_RATE = "44100"
