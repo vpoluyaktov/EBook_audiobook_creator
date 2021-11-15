@@ -86,15 +86,27 @@ class EPUBParser:
       chapter_content_source = chapter['chapter_content_source']
       chapter_file_name, chapter_anchor = chapter_content_source.split('#')
       chapter_html = file.read(content_dir + chapter_file_name).decode("utf-8")
-      # cut from the chapter beginning
-      if chapter_anchor:
-        id_pos = chapter_html.find('id="' + chapter_anchor + '"') 
-        if id_pos != -1:
-          div_pos = chapter_html.rfind('<', 0, id_pos)
-          if div_pos != -1:
-            chapter_html = chapter_html[div_pos:]
 
-      # next_chapter_html = chapters[index + 1]
+      div_pos_start = None
+      div_pos_end = None
+      # find chapter start position
+      if chapter_anchor:
+        id_pos_start = chapter_html.find('id="' + chapter_anchor + '"') 
+        if id_pos_start != -1:
+          div_pos_start = chapter_html.rfind('<', 0, id_pos_start)
+
+      # find chapter end position
+      if index < len(chapters) -1:
+        next_chapter = chapters[index + 1]
+        next_chapter_content_source = next_chapter['chapter_content_source']
+        next_chapter_file_name, next_chapter_anchor = next_chapter_content_source.split('#')
+        if chapter_file_name == next_chapter_file_name:
+          id_pos_end = chapter_html.find('id="' + next_chapter_anchor + '"') 
+          if id_pos_end != -1:
+            div_pos_end = chapter_html.rfind('<', 0, id_pos_end)
+
+      chapter_html = chapter_html[div_pos_start:div_pos_end]
+
       chapter_text =  html2text.html2text(chapter_html, bodywidth = 0)      
       chapter['chapter_text'] = chapter_text
 
