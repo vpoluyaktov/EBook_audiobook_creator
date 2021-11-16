@@ -14,6 +14,7 @@ class EPUBParser:
     self.book_author = ''
     self.book_annotation = ''
     self.cover_image = b''
+    self.cover_image_name = ''
     self.book_chapters = []
 
   def parse(self, filename):
@@ -24,9 +25,12 @@ class EPUBParser:
     if content_dir != "": 
       content_dir = content_dir+"/"   
 
-    self.book_title, self.book_author, self.book_annotation, toc = self.parse_root_file(file.read(root_file))
-    self.book_chapters = self.parse_toc(file.read(content_dir + toc))
+    toc, cover_href = self.parse_root_file(file.read(root_file).decode("utf-8"))
+    self.book_chapters = self.parse_toc(file.read(content_dir + toc).decode("utf-8"))
     self.book_chapters = self.fetch_chapters_text(self.book_chapters, file, content_dir)
+    if cover_href:
+      self.cover_image = file.read(content_dir + cover_href)
+      self.cover_image_name = os.path.basename(cover_href)
 
   def parse_container_xml(self, container_xml):
     ns = {'container': 'urn:oasis:names:tc:opendocument:xmlns:container'}
@@ -44,12 +48,11 @@ class EPUBParser:
     root = ET.fromstring(root_file_xml)
 
     metadata = root.find('opf:metadata', ns)
-    title = metadata.find('dc:title', ns).text
-    author = metadata.find('dc:creator', ns).text
-    annotation = ''
+    self.title = metadata.find('dc:title', ns).text
+    self.author = metadata.find('dc:creator', ns).text
     annotation_element = metadata.find('dc:description', ns)
     if annotation_element != None:
-      annotation = annotation_element.text
+      self.annotation = annotation_element.text
 
     toc = None
     manifest = root.find('opf:manifest', ns)
@@ -58,8 +61,19 @@ class EPUBParser:
         and item[1].attrib["id"] in ['ncx', 'toc', 'ncxtoc']:
           toc = item[1].attrib["href"]
           break
+    
+    # get cover image
+    meta_tag = metadata.find('opf:meta', ns)
+    if meta_tag is not None and meta_tag.attrib['name'] == 'cover':
+      cover_id = meta_tag.attrib['content']  
+      if cover_id != "":
+        for item in enumerate(manifest.findall('opf:item', ns)):
+          if item[1].attrib["id"] == cover_id \
+            and item[1].attrib["media-type"] in ['image/jpeg']: 
+              cover_href = item[1].attrib["href"]
+              break
 
-    return title, author, annotation, toc
+    return toc, cover_href
 
   def parse_toc(self, toc_file_xml):
     ns = {'ncx': 'http://www.daisy.org/z3986/2005/ncx/'}
@@ -162,6 +176,6 @@ class EPUBParser:
   def save_cover_image_to_file(self, path):
     cover_file_name = path + self.cover_image_name
     file = open(cover_file_name, "wb")
-    file.write(base64.b64decode(self.cover_image))
+    file.write(self.cover_image)
     file.close 
     return cover_file_name  

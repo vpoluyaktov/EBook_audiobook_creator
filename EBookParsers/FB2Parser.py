@@ -10,6 +10,7 @@ class FB2Parser:
     self.book_author = ''
     self.book_annotation = ''
     self.cover_image = b''
+    self.cover_image_name = ''
     self.book_chapters = []
 
   def parse(self, filename):
@@ -129,7 +130,7 @@ class FB2Parser:
         if 'content-type' in binary.attrib and 'id' in binary.attrib \
           and (binary.attrib['content-type'] == 'image/jpeg' or binary.attrib['content-type'] == 'image/jpg' or binary.attrib['content-type'] == 'image/png') \
             and binary.attrib['id'] == cover_image_name.replace('#', ''):
-            self.cover_image = binary.text
+            self.cover_image = base64.b64decode(binary.text)
             self.cover_image_name = cover_image_name.replace('#', '')
 
 
