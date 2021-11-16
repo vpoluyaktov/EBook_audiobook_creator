@@ -94,14 +94,16 @@ if __name__ == '__main__':
   else:  
     ebook_file_name = sys.argv[1];
 
-  if os.path.splitext(ebook_file_name)[1] == '.fb2':
+  file_extension = os.path.splitext(ebook_file_name)[1]      
+  if file_extension == '.fb2':
     parser = FB2Parser()
-  elif os.path.splitext(ebook_file_name)[1] == '.epub':
+  elif file_extension == '.epub':
     parser = EPUBParser()
   else:
     print("This ebook format is not supported yet.")
     exit()
       
+  print("\nParsing {0} file...".format(file_extension))    
   parser.TOC_max_depth = TOC_MAX_DEPTH
   parser.parse(ebook_file_name)
 

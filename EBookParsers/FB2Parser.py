@@ -4,8 +4,6 @@ import base64
 
 class FB2Parser:
 
-  cleanup_dictionary = [ ('\u00A0', ' ')]
-
   def __init__(self):
     self.TOC_max_depth = 3
     self.book_title = ''
@@ -110,8 +108,8 @@ class FB2Parser:
     return text  
 
   def add_period(self, text):
-    if text != None and text != '':
-      if text.strip()[-1] != '.' and text.strip()[-1] != '?' and text.strip()[-1] != '?' :
+    if text != None and text.strip() != '':
+      if text.strip()[-1] != '.' and text.strip()[-1] != '?' and text.strip()[-1] != '?' and text.strip()[-1] != ':' and text.strip()[-3:] != '...':
         text = text.strip() +'. '
     return text    
 
@@ -136,7 +134,8 @@ class FB2Parser:
 
 
   def cleanup_text(self, text):
-    for tuple in self.cleanup_dictionary:
+    cleanup_dictionary = [ ('\u00A0', ' ')]
+    for tuple in cleanup_dictionary:
       text = text.replace(tuple[0], tuple[1])
     return text  
 

@@ -8,8 +8,6 @@ import html2text
 
 class EPUBParser:
 
-  cleanup_dictionary = [ ('\u00A0', ' ')]
-
   def __init__(self):
     self.TOC_max_depth = 3
     self.book_title = ''
@@ -26,7 +24,7 @@ class EPUBParser:
     if content_dir != "": 
       content_dir = content_dir+"/"   
 
-    self.book_title, self.book_author, toc = self.parse_root_file(file.read(root_file))
+    self.book_title, self.book_author, self.book_annotation, toc = self.parse_root_file(file.read(root_file))
     self.book_chapters = self.parse_toc(file.read(content_dir + toc))
     self.book_chapters = self.fetch_chapters_text(self.book_chapters, file, content_dir)
 
@@ -48,6 +46,10 @@ class EPUBParser:
     metadata = root.find('opf:metadata', ns)
     title = metadata.find('dc:title', ns).text
     author = metadata.find('dc:creator', ns).text
+    annotation = ''
+    annotation_element = metadata.find('dc:description', ns)
+    if annotation_element != None:
+      annotation = annotation_element.text
 
     toc = None
     manifest = root.find('opf:manifest', ns)
@@ -57,7 +59,7 @@ class EPUBParser:
           toc = item[1].attrib["href"]
           break
 
-    return title, author, toc
+    return title, author, annotation, toc
 
   def parse_toc(self, toc_file_xml):
     ns = {'ncx': 'http://www.daisy.org/z3986/2005/ncx/'}
@@ -82,6 +84,14 @@ class EPUBParser:
         self.parse_nav_point(nav_point, chapters, TOC_depth)
 
   def fetch_chapters_text(self, chapters, file, content_dir):
+    converter = html2text.HTML2Text()
+    converter.body_width = 0
+    converter.ignore_tables = True 
+    converter.ignore_emphasis = True
+    converter.ignore_links = True
+    converter.images_to_alt = True
+    converter.default_image_alt="Image.\n"
+
     for index, chapter in enumerate(chapters):
       chapter_content_source = chapter['chapter_content_source']
       chapter_file_name, chapter_anchor = chapter_content_source.split('#')
@@ -104,18 +114,45 @@ class EPUBParser:
           id_pos_end = chapter_html.find('id="' + next_chapter_anchor + '"') 
           if id_pos_end != -1:
             div_pos_end = chapter_html.rfind('<', 0, id_pos_end)
-
+      # cut chapter from a big html      
       chapter_html = chapter_html[div_pos_start:div_pos_end]
-
-      chapter_text =  html2text.html2text(chapter_html, bodywidth = 0)      
-      chapter['chapter_text'] = chapter_text
-
+      chapter_html = self.cleanup_html(chapter_html)
+      chapter_text =  converter.handle(chapter_html)      
+      chapter['chapter_text'] = self.cleanup_text(chapter_text)
     return chapters  
 
+  def cleanup_html(self, html):
+    # remove images alt tag
+    html = re.sub(r'alt=".*"', '', html) 
+    # cleanup some special characters
+    cleanup_dictionary = [ ('\u00A0', ' ')]
+    for tuple in cleanup_dictionary:
+      html = html.replace(tuple[0], tuple[1])
+    return html
+
   def cleanup_text(self, text):
-    for tuple in self.cleanup_dictionary:
+    # remove quote
+    text = re.sub(r'>', '', text) 
+    # remove headers
+    text = re.sub(r'#+ ', ' ', text) 
+    # add dot at the end of each paragraph
+    paragraphs = ""
+    for paragraph in text.split('\n'):
+      paragraph = self.add_period(paragraph)
+      paragraph += '\n'
+      paragraphs += paragraph
+    text = paragraphs
+    # cleanup some special characters
+    cleanup_dictionary = [('\.', '.')]
+    for tuple in cleanup_dictionary:
       text = text.replace(tuple[0], tuple[1])
     return text  
+
+  def add_period(self, text):
+    if text != None and text.strip() != '':
+      if text.strip()[-1] != '.' and text.strip()[-1] != '?' and text.strip()[-1] != '?' and text.strip()[-1] != ':' and text.strip()[-3:] != '...':
+        text = text.strip() +'. '
+    return text      
 
   def save_text_to_file(self, text, filename):
     file = open(filename, "w")
@@ -128,6 +165,3 @@ class EPUBParser:
     file.write(base64.b64decode(self.cover_image))
     file.close 
     return cover_file_name  
-
-
-      
