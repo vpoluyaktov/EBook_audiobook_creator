@@ -21,7 +21,7 @@ from TTSEngines.TTSLocal import TTSLocal
 # debug feature-toggles
 PRE_CLEANUP = True
 CREATE_DIRS = True
-NARRATE_CHAPTERS = False
+NARRATE_CHAPTERS = True
 RE_ENCODE_MP3 = True
 CONCATENATE_MP3 = True
 CONVERT_TO_MP4 = True
