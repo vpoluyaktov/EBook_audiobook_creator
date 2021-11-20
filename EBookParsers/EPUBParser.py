@@ -48,11 +48,11 @@ class EPUBParser:
     root = ET.fromstring(root_file_xml)
 
     metadata = root.find('opf:metadata', ns)
-    self.title = metadata.find('dc:title', ns).text
-    self.author = metadata.find('dc:creator', ns).text
+    self.book_title = metadata.find('dc:title', ns).text
+    self.book_author = metadata.find('dc:creator', ns).text
     annotation_element = metadata.find('dc:description', ns)
     if annotation_element != None:
-      self.annotation = annotation_element.text
+      self.book_annotation = annotation_element.text
 
     toc = None
     manifest = root.find('opf:manifest', ns)

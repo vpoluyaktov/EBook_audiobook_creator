@@ -148,6 +148,6 @@ class FB2Parser:
   def save_cover_image_to_file(self, path):
     cover_file_name = path + self.cover_image_name
     file = open(cover_file_name, "wb")
-    file.write(base64.b64decode(self.cover_image))
+    file.write(self.cover_image)
     file.close 
     return cover_file_name  
