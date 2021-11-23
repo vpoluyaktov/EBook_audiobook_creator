@@ -14,7 +14,7 @@ from mutagen.easyid3 import EasyID3
 from mutagen.mp3 import MP3
 from mutagen.mp4 import MP4
 from mutagen.mp4 import MP4Cover
-
+from EBookParsers.EPUBParser import EPUBParser
 from EBookParsers.FB2Parser import FB2Parser 
 from TTSEngines.TTSLocal import TTSLocal
 
@@ -29,7 +29,7 @@ POST_CLEANUP = False
 
 # Experimental features. Use with caution
 EDIT_CHAPTER_NAMES = False
-TOC_MAX_DEPTH = 2
+TOC_MAX_DEPTH = 3
 
 BITRATE = "128k"
 SAMPLE_RATE = "44100"
@@ -93,9 +93,19 @@ if __name__ == '__main__':
     ebook_file_name = input("Enter an ebook file name: ")
   else:  
     ebook_file_name = sys.argv[1];
-  parser = FB2Parser(ebook_file_name)
+
+  file_extension = os.path.splitext(ebook_file_name)[1]      
+  if file_extension == '.fb2':
+    parser = FB2Parser()
+  elif file_extension == '.epub':
+    parser = EPUBParser()
+  else:
+    print("This ebook format is not supported yet.")
+    exit()
+      
+  print("\nParsing {0} file...".format(file_extension))    
   parser.TOC_max_depth = TOC_MAX_DEPTH
-  parser.parse()
+  parser.parse(ebook_file_name)
 
   book_author = parser.book_author
   book_title = parser.book_title
@@ -122,15 +132,15 @@ if __name__ == '__main__':
   chapter_no = 1
   mp3_file_names = []
   chapter_names = []
-  for chapter in parser.book_sections:
-    print('Narrating chapter {0}'.format(chapter['section_title']))
+  for chapter in parser.book_chapters:
+    print('Narrating chapter {0}'.format(chapter['chapter_title']))
     filename = 'chapter_' + str(chapter_no)
-    text = tts.fix_pronunciation(chapter['section_text'])    
+    text = tts.fix_pronunciation(chapter['chapter_text'])    
     parser.save_text_to_file(text, 'tmp/' + filename + '.txt')
     if NARRATE_CHAPTERS:
       tts.saveTextToMp3(text, 'tmp/' + filename + '.mp3')   
     mp3_file_names.append(filename + '.mp3') 
-    chapter_names.append(chapter['section_title'])
+    chapter_names.append(chapter['chapter_title'])
     chapter_no += 1
 
 # generate silence .mp3 to fill gaps between chapters
@@ -217,7 +227,7 @@ for audiobook_part in audiobook_parts:
 
     # brake files into chapters
     for filename in part_audio_files:
-        mp3_title = parser.book_sections[file_number - 1]['section_title']
+        mp3_title = parser.book_chapters[file_number - 1]['chapter_title']
         length = get_mp3_length('tmp/resampled/' + filename) + (MP3_DURATION_ADJUSTMENT / 1000)
         chapter_end_time = chapter_end_time + length
         file_size = os.stat('tmp/resampled/' + filename).st_size
@@ -228,7 +238,7 @@ for audiobook_part in audiobook_parts:
 
         # if this is last file in the list or next file title is different from current one - finish the chapter
         if file_number == len(part_audio_files) \
-            or mp3_title != parser.book_sections[file_number]['section_title']: # next file title
+            or mp3_title != parser.book_chapters[file_number]['chapter_title']: # next file title
             # chapter changed
             chapter_title = mp3_title
 

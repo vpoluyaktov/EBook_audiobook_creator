@@ -1,19 +1,23 @@
-
 import xml.etree.ElementTree as ET
 import re
 import base64
 
 class FB2Parser:
 
-  cleanup_dictionary = [ ('\u00A0', ' ')]
+  def __init__(self):
+    self.TOC_max_depth = 3
+    self.book_title = ''
+    self.book_author = ''
+    self.book_annotation = ''
+    self.cover_image = b''
+    self.cover_image_name = ''
+    self.book_chapters = []
 
-  def __init__(self, filename):
+  def parse(self, filename):
     self._fb2 = ET.parse(filename).getroot()
     for element in self._fb2.iter():
       element.tag = element.tag.partition('}')[-1]
-    self.TOC_max_depth = 3
 
-  def parse(self):
     # book metadata
     self.book_title = self._fb2.find('./description/title-info/book-title').text
     self.book_author = (self._fb2.find('./description/title-info/author/first-name').text
@@ -21,42 +25,41 @@ class FB2Parser:
     self.book_annotation = self.tree_to_text(self._fb2.find('./description/title-info/annotation')).strip()
 
     # book sections
-    self.book_bodies = []
-    self.book_sections = []
+    self.book_chapters = []
     for body_id, body in enumerate(self._fb2.findall('./body')):
       if body.find('./title'): # first title
-        section_title = self.parse_title(body.find('./title'), 0)
-        section_text = self.tree_to_text(body.find('./title'))
-        section_id = 0
-        self.book_sections.append({'section_title':section_title, 'section_id': section_id, 'section_text': section_text})
+        chapter_title = self.parse_title(body.find('./title'), 0)
+        chapter_text = self.tree_to_text(body.find('./title'))
+        chapter_id = 0
+        self.book_chapters.append({'chapter_title':chapter_title, 'chapter_id': chapter_id, 'chapter_text': chapter_text})
       # note section at the end of a book
       if 'name' in body.attrib and body.attrib['name'] == "notes":
-        section_id = 0
-        section_title = self.parse_title(body.find('./title'), 0)
-        section_text = self.parse_notes(body)
-        self.book_sections.append({'section_title':section_title, 'section_id': section_id, 'section_text': section_text})
+        chapter_id = 0
+        chapter_title = self.parse_title(body.find('./title'), 0)
+        chapter_text = self.parse_notes(body)
+        self.book_chapters.append({'chapter_title':chapter_title, 'chapter_id': chapter_id, 'chapter_text': chapter_text})
       elif body.find('./section'):
         TOC_depth = 0
-        for section_id, section in enumerate(body.findall('./section')):
-          self.parse_section(section_id, section, TOC_depth)
+        for chapter_id, section in enumerate(body.findall('./section')):
+          self.parse_section(chapter_id, section, TOC_depth)
 
 
     # extract cover image if exists
     self._extract_cover_image()
           
-  def parse_section(self, section_id, section, TOC_depth):
+  def parse_section(self, chapter_id, section, TOC_depth):
     TOC_depth += 1
-    section_title = self.parse_title(section.find('./title'), TOC_depth)
+    chapter_title = self.parse_title(section.find('./title'), TOC_depth)
 
     if TOC_depth < self.TOC_max_depth:   
-      section_text = self.tree_to_text(section)
+      chapter_text = self.tree_to_text(section)
     else:
-      section_text = self.tree_to_text(section, False, True)
-    self.book_sections.append({'section_title':section_title, 'section_id': section_id, 'section_text': section_text})
+      chapter_text = self.tree_to_text(section, False, True)
+    self.book_chapters.append({'chapter_title':chapter_title, 'chapter_id': chapter_id, 'chapter_text': chapter_text})
 
     if TOC_depth < self.TOC_max_depth:  
-      for section_id, section in enumerate(section.findall('./section')):
-        self.parse_section(section_id, section, TOC_depth)
+      for chapter_id, section in enumerate(section.findall('./section')):
+        self.parse_section(chapter_id, section, TOC_depth)
 
   def parse_title(self, title_element, depth):
     text = ""
@@ -106,8 +109,8 @@ class FB2Parser:
     return text  
 
   def add_period(self, text):
-    if text != None and text != '':
-      if text.strip()[-1] != '.' and text.strip()[-1] != '?' and text.strip()[-1] != '?' :
+    if text != None and text.strip() != '':
+      if text.strip()[-1] != '.' and text.strip()[-1] != '?' and text.strip()[-1] != '?' and text.strip()[-1] != ':' and text.strip()[-3:] != '...':
         text = text.strip() +'. '
     return text    
 
@@ -127,12 +130,13 @@ class FB2Parser:
         if 'content-type' in binary.attrib and 'id' in binary.attrib \
           and (binary.attrib['content-type'] == 'image/jpeg' or binary.attrib['content-type'] == 'image/jpg' or binary.attrib['content-type'] == 'image/png') \
             and binary.attrib['id'] == cover_image_name.replace('#', ''):
-            self.cover_image = binary.text
+            self.cover_image = base64.b64decode(binary.text)
             self.cover_image_name = cover_image_name.replace('#', '')
 
 
   def cleanup_text(self, text):
-    for tuple in self.cleanup_dictionary:
+    cleanup_dictionary = [ ('\u00A0', ' ')]
+    for tuple in cleanup_dictionary:
       text = text.replace(tuple[0], tuple[1])
     return text  
 
@@ -144,6 +148,6 @@ class FB2Parser:
   def save_cover_image_to_file(self, path):
     cover_file_name = path + self.cover_image_name
     file = open(cover_file_name, "wb")
-    file.write(base64.b64decode(self.cover_image))
+    file.write(self.cover_image)
     file.close 
     return cover_file_name  
