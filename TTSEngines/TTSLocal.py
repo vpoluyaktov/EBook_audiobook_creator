@@ -46,6 +46,11 @@ class TTSLocal:
         if dict_file:
           dict_file.close()
 
+  def fix_pronunciation(self, text):
+    for tuple in self.dictionary:
+      text = re.sub(tuple[1], tuple[2], text)
+    return text  
+
   def getVoicesList(self):
     voices = self.engine.getProperty('voices')     
     i = 0
@@ -63,8 +68,3 @@ class TTSLocal:
     self.engine.connect('finished-utterance', self.onEnd)
     self.engine.save_to_file(text, filename)
     self.engine.startLoop()
-
-  def fix_pronunciation(self, text):
-    for tuple in self.dictionary:
-      text = re.sub(tuple[1], tuple[2], text)
-    return text  

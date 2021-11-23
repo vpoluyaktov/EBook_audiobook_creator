@@ -15,7 +15,8 @@ from mutagen.mp3 import MP3
 from mutagen.mp4 import MP4
 from mutagen.mp4 import MP4Cover
 from EBookParsers.EPUBParser import EPUBParser
-from EBookParsers.FB2Parser import FB2Parser 
+from EBookParsers.FB2Parser import FB2Parser
+from TTSEngines.AWSPolly import AWSPolly 
 from TTSEngines.TTSLocal import TTSLocal
 
 # debug feature-toggles
@@ -126,10 +127,12 @@ if __name__ == '__main__':
   if parser.cover_image:
     album_cover = parser.save_cover_image_to_file('tmp/')
 
-  tts = TTSLocal(ebook_file_name)
-  # tts.getVoicesList()
-  tts.VOICE_ID = 5
-  
+#   tts = TTSLocal(ebook_file_name)
+  tts = AWSPolly(ebook_file_name)
+#   tts.getVoicesList()
+#   tts.VOICE_ID = 5
+  tts.VOICE_ID = 'Matthew'
+
   chapter_no = 1
   mp3_file_names = []
   chapter_names = []
