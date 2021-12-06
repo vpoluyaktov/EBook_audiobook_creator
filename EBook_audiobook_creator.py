@@ -329,7 +329,7 @@ for audiobook_part in audiobook_parts:
     if len(audiobook_parts) > 1:
         audiobook_file_name = "{} - {}, Part {}.m4b".format(book_author, book_title, part_number)
     else:
-    	audiobook_file_name = "{} - {}.m4b".format(book_author, book_title)
+        audiobook_file_name = "{} - {}.m4b".format(book_author, book_title)
 
     # replace non-safe characters in the file name
     unsafe_tuples = [('/','_')]
