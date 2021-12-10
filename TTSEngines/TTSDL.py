@@ -1,52 +1,78 @@
-from glob import glob
-import torch
+import os
+import re
+import numpy as np
+import noisereduce as nr
 from pydub import AudioSegment
-from pydub.playback import play
+from TTS.utils.manage import ModelManager
+from TTS.utils.synthesizer import Synthesizer
+from utils.SuppressOutput import suppress_output
+
+MODELS = "../TTSEngines/models.json"
+DICTIONARY_DIR = '../TTSEngines/Dict/TTSDL'
+MODEL_NAME = 'tts_models/en/ljspeech/tacotron2-DDC_ph'
+VOCODER_NAME = 'vocoder_models/en/ljspeech/multiband-melgan'
+VOICE_ID = 'tacotron2-DDC_ph'
+USE_CUDA = False
+NOISE_REDUCTION = False
+
+class TTSDL:
+  def __init__(self, ebook_file_name):
+
+    modelManager = ModelManager(MODELS)
+    model_path, config_path, model_item = modelManager.download_model(MODEL_NAME)
+    vocoder_path, vocoder_config_path, _ = modelManager.download_model(VOCODER_NAME)
+    speakers_file_path = None
+    self.engine =  Synthesizer(model_path, config_path, speakers_file_path, vocoder_path, vocoder_config_path, use_cuda=USE_CUDA)
+           
+    self.ebook_file_name = ebook_file_name
+    self.load_pronunciation_dictionary()
 
 
-language = 'ru'
-speaker = 'kseniya_v2'
-sample_rate = 16000
-device = torch.device('cpu')
+  def load_pronunciation_dictionary(self):
 
-model, example_text = torch.hub.load(repo_or_dir='snakers4/silero-models',
-                                     model='silero_tts',
-                                     language=language,
-                                     speaker=speaker)
-model.to(device)  # gpu or cpu
+    dict_default = DICTIONARY_DIR + '/Default.dict'
+    dict_voice = DICTIONARY_DIR + '/Voice/' + VOICE_ID + '.dict'
+    dict_book = DICTIONARY_DIR + '/Book/' + os.path.splitext(os.path.basename(self.ebook_file_name))[0] + '.dict'
+    dict_files = [dict_default, dict_voice, dict_book]
 
-example_batch = [ 'Так уж получилось, ',
-                  'что наша работа последние двенадцать лет постоянно связана с людьми неординарными: ', 
-                  'руководителями альпинистских, ',
-                  'полярных, ',
-                  'яхтенных, ',
-                  'парашютных экспедиций, ',
-                  'сильными спортсменами, ',
-                  'одиночными путешественниками. ',
-                  'Помогая таким людям, ',
-                  'невольно становишься соучастником их рискованных проектов. ',
-                  'Многие стали нашими друзьями. ',
-                  'Статистика восхождений на вершину Эвереста говорит о том, ',
-                  'что покорить его всегда было непросто. ', 
-                  'С 20-х годов двадцатого века в Непал направлялись экспедиции с тоннами груза, ',
-                  'укомплектованные альпинистской командой в два-три десятка человек. ',
-                  'Восхождение на гору напоминало осаду средневекового замка, ',
-                  'в предместье которого разбивается лагерь и неделя за неделей осаждающие вновь и вновь атакуют стены и отвесы, ',
-                  'пробиваясь сквозь туман и пургу. ']
+    self.dictionary = []
+    for dict_file_name in dict_files:
+      dict_file = None
+      try:
+        dict_file = open(dict_file_name, 'r')
+        line = dict_file.readline()      
+        while line:
+          tuple = line.split("~")
+          self.dictionary.append(tuple)
+          line = dict_file.readline()
+      except Exception:
+        None
+      finally:
+        if dict_file:
+          dict_file.close()
 
-audio_chunks = model.apply_tts(texts=example_batch, sample_rate=sample_rate)
-sound = AudioSegment.empty()
-for audio_chunk in audio_chunks:
-  numpy_array = (audio_chunk * 32767).numpy().astype('int16')
-  audio_segment = AudioSegment(
-    numpy_array.tobytes(), 
-    frame_rate = sample_rate,
-    sample_width = numpy_array.dtype.itemsize, 
-    channels=1
-  )
-  sound = sound.append(audio_segment, crossfade=0) 
+  def getVoicesList(self):
+    None
 
-with open("Audio.mp3", 'wb') as out_f:
-    sound.export(out_f, format='mp3')
+  def saveTextToMp3(self, text, filename):
+    with suppress_output(suppress_stdout=True, suppress_stderr=False):
+      wavs = self.engine.tts(text, speaker_idx="", style_wav="")
+    numpy_array = np.asarray(wavs) 
+    numpy_array = (numpy_array * 32767).astype('int16')
+    if NOISE_REDUCTION:
+      numpy_array = nr.reduce_noise(numpy_array, sr = self.engine.output_sample_rate)
 
-play(sound)
+    sound = AudioSegment(
+      numpy_array.tobytes(), 
+      frame_rate = self.engine.output_sample_rate,
+      sample_width = numpy_array.dtype.itemsize, 
+      channels=1
+    )
+    with open(filename, 'wb') as out_f:
+      sound.export(out_f, format='mp3')
+
+
+  def fix_pronunciation(self, text):
+    for tuple in self.dictionary:
+      text = re.sub(tuple[1], tuple[2], text)
+    return text  

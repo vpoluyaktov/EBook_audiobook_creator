@@ -14,9 +14,8 @@ from mutagen.easyid3 import EasyID3
 from mutagen.mp3 import MP3
 from mutagen.mp4 import MP4
 from mutagen.mp4 import MP4Cover
-from EBookParsers.EPUBParser import EPUBParser
-from EBookParsers.FB2Parser import FB2Parser 
-from TTSEngines.TTSLocal import TTSLocal
+
+TTS_ENGINE = 'DL'
 
 # debug feature-toggles
 PRE_CLEANUP = True
@@ -29,14 +28,14 @@ POST_CLEANUP = False
 
 # Experimental features. Use with caution
 EDIT_CHAPTER_NAMES = False
-TOC_MAX_DEPTH = 3
+TOC_MAX_DEPTH = 2
 
 BITRATE = "128k"
 SAMPLE_RATE = "44100"
 BIT_DEPTH = "s16"
 OUTPUT_MODE="mono" # mono / stereo
 GAP_DURATION = 2 # Duration of a gaps between chapters
-part_size_human = "5 GB" # default audiobook part size
+part_size_human = "2 GB" # default audiobook part size
 
 # small adjustment (don't ask me why - just noticed mutagen returns slighly incorrect value)
 # if you hear the end of previous chapter at the beginning of new one - slightly increase the value of this parameter
@@ -96,8 +95,10 @@ if __name__ == '__main__':
 
   file_extension = os.path.splitext(ebook_file_name)[1]      
   if file_extension == '.fb2':
+    from EBookParsers.FB2Parser import FB2Parser 
     parser = FB2Parser()
   elif file_extension == '.epub':
+    from EBookParsers.EPUBParser import EPUBParser
     parser = EPUBParser()
   else:
     print("This ebook format is not supported yet.")
@@ -126,10 +127,20 @@ if __name__ == '__main__':
   if parser.cover_image:
     album_cover = parser.save_cover_image_to_file('tmp/')
 
-  tts = TTSLocal(ebook_file_name)
-  # tts.getVoicesList()
-  tts.VOICE_ID = 5
-  
+  if TTS_ENGINE == 'LOCAL':
+    from TTSEngines.TTSLocal import TTSLocal
+    tts = TTSLocal(ebook_file_name)
+    tts.getVoicesList()
+    tts.VOICE_ID = 5
+  elif TTS_ENGINE == 'DL':
+    print("Loading TTS Neural Network...")
+    from TTSEngines.TTSDL import TTSDL
+    tts = TTSDL(ebook_file_name)
+    print(" ")
+  elif TTS_ENGINE == 'DL_SILERO':
+    from TTSEngines.TTSDL_SILERO import TTSDL
+    tts = TTSDL(ebook_file_name)  
+
   chapter_no = 1
   mp3_file_names = []
   chapter_names = []
