@@ -3,6 +3,7 @@ pyttsx3
 mutagen
 numpy
 noisereduce
+soundfile
 pydub
 torch
 TTS==0.4.2
