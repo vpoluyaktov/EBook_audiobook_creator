@@ -8,7 +8,6 @@ from pydub import effects
 from TTS.utils.manage import ModelManager
 from TTS.utils.synthesizer import Synthesizer
 from utils.SuppressOutput import suppress_output
-from pysndfx import AudioEffectsChain
 
 MODELS = "../TTSEngines/Model/models.json"
 DICTIONARY_DIR = '../TTSEngines/Dict/TTSDL'
@@ -85,7 +84,7 @@ class TTSDL:
     sound = sound.normalize()
     sound = sound.low_pass_filter(cutoff = 14000)
     sound = sound.apply_gain_stereo()
-    
+
     with open(filename, 'wb') as out_f:
       sound.export(out_f, format='mp3')
 
