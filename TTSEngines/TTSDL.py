@@ -4,7 +4,7 @@ import numpy as np
 import noisereduce as nr
 import soundfile as sf
 from pydub import AudioSegment
-from pydub import effects
+from pydub import scipy_effects
 from TTS.utils.manage import ModelManager
 from TTS.utils.synthesizer import Synthesizer
 from utils.SuppressOutput import suppress_output
@@ -12,10 +12,16 @@ from utils.SuppressOutput import suppress_output
 MODELS = "../TTSEngines/Model/models.json"
 DICTIONARY_DIR = '../TTSEngines/Dict/TTSDL'
 MODEL_NAME = 'tts_models/en/ljspeech/tacotron2-DDC_ph'
-VOCODER_NAME = 'vocoder_models/en/ljspeech/multiband-melgan'
+VOCODER_NAME = 'vocoder_models/en/ljspeech/univnet'
+VOICE_ID = 'univnet'
 USE_CUDA = False
+
 NOISE_REDUCTION = True
-VOICE_ID = 'multiband-melgan'
+BANDPASS_FILTER = True
+LOW_CUTOFF_FREQ = 150
+HIGH_CUTOFF_FREQ = 3500
+NORMALIZE = True
+
 NOISE_SAMLES_DIR='../TTSEngines/NoiseSamples/TTSDL'
 
 class TTSDL:
@@ -65,12 +71,13 @@ class TTSDL:
     if NOISE_REDUCTION:
       try: 
         noise_sample, rate = sf.read(NOISE_SAMLES_DIR + '/Voice/' + VOICE_ID + '.wav')
-        with suppress_output(suppress_stdout=True, suppress_stderr=False):
+        with suppress_output(suppress_stdout=True, suppress_stderr=True):
           numpy_array = nr.reduce_noise(
             y = numpy_array, 
             sr = self.engine.output_sample_rate, 
             y_noise = noise_sample,           
-            prop_decrease=0.8)
+            prop_decrease = 0.8,
+            n_fft = 512)
       except Exception:
         None
 
@@ -81,9 +88,11 @@ class TTSDL:
       channels=1
     )
 
-    sound = sound.normalize()
-    sound = sound.low_pass_filter(cutoff = 14000)
-    sound = sound.apply_gain_stereo()
+    if BANDPASS_FILTER:
+      sound = sound.band_pass_filter(low_cutoff_freq = LOW_CUTOFF_FREQ, high_cutoff_freq = HIGH_CUTOFF_FREQ)
+    if NORMALIZE:  
+      sound = sound.normalize()
+    # sound = sound.apply_gain_stereo()
 
     with open(filename, 'wb') as out_f:
       sound.export(out_f, format='mp3')

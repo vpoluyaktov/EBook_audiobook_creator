@@ -5,6 +5,7 @@ numpy
 noisereduce
 soundfile
 pydub
+scipy
 torch
 TTS==0.4.2
 torchaudio==0.10.0

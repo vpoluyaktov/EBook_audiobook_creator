@@ -28,10 +28,10 @@ POST_CLEANUP = False
 
 # Experimental features. Use with caution
 EDIT_CHAPTER_NAMES = False
-TOC_MAX_DEPTH = 2
+TOC_MAX_DEPTH = 3
 
-BITRATE = "128k"
-SAMPLE_RATE = "44100"
+BITRATE = "32k"
+SAMPLE_RATE = "22050"
 BIT_DEPTH = "s16"
 OUTPUT_MODE="mono" # mono / stereo
 GAP_DURATION = 2 # Duration of a gaps between chapters
