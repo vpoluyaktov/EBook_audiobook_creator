@@ -69,7 +69,7 @@ class EPUBParser:
       if cover_id != "":
         for item in enumerate(manifest.findall('opf:item', ns)):
           if item[1].attrib["id"] == cover_id \
-            and item[1].attrib["media-type"] in ['image/jpeg']: 
+            and item[1].attrib["media-type"] in ['image/jpeg', 'image/png']: 
               cover_href = item[1].attrib["href"]
               break
 

@@ -28,7 +28,7 @@ POST_CLEANUP = False
 
 # Experimental features. Use with caution
 EDIT_CHAPTER_NAMES = False
-TOC_MAX_DEPTH = 3
+TOC_MAX_DEPTH = 2
 
 BITRATE = "32k"
 SAMPLE_RATE = "22050"
