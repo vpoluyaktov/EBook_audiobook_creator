@@ -124,14 +124,16 @@ class FB2Parser:
   # extract cover image if exists
   def _extract_cover_image(self):
     self.cover_image = None    
-    cover_image_name = self._fb2.find('./description/title-info/coverpage/image').attrib['{http://www.w3.org/1999/xlink}href']
-    if cover_image_name:
-      for binary in self._fb2.findall('./binary'):
-        if 'content-type' in binary.attrib and 'id' in binary.attrib \
-          and (binary.attrib['content-type'] == 'image/jpeg' or binary.attrib['content-type'] == 'image/jpg' or binary.attrib['content-type'] == 'image/png') \
-            and binary.attrib['id'] == cover_image_name.replace('#', ''):
-            self.cover_image = base64.b64decode(binary.text)
-            self.cover_image_name = cover_image_name.replace('#', '')
+    cover_page = self._fb2.find('./description/title-info/coverpage/image')
+    if cover_page:
+      cover_image_name = cover_page.attrib['{http://www.w3.org/1999/xlink}href']
+      if cover_image_name:
+        for binary in self._fb2.findall('./binary'):
+          if 'content-type' in binary.attrib and 'id' in binary.attrib \
+            and (binary.attrib['content-type'] == 'image/jpeg' or binary.attrib['content-type'] == 'image/jpg' or binary.attrib['content-type'] == 'image/png') \
+              and binary.attrib['id'] == cover_image_name.replace('#', ''):
+              self.cover_image = base64.b64decode(binary.text)
+              self.cover_image_name = cover_image_name.replace('#', '')
 
 
   def cleanup_text(self, text):
