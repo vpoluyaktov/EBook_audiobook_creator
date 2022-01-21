@@ -9,6 +9,8 @@ from TTS.utils.manage import ModelManager
 from TTS.utils.synthesizer import Synthesizer
 from utils.SuppressOutput import suppress_output
 
+DEBUG = False
+
 MODELS = "../TTSEngines/Model/models.json"
 DICTIONARY_DIR = '../TTSEngines/Dict/TTSDL'
 MODEL_NAME = 'tts_models/en/ljspeech/tacotron2-DDC_ph'
@@ -17,7 +19,7 @@ VOICE_ID = 'univnet'
 USE_CUDA = False
 
 NOISE_REDUCTION = True
-BANDPASS_FILTER = True
+BANDPASS_FILTER = False
 LOW_CUTOFF_FREQ = 20
 HIGH_CUTOFF_FREQ = 7000
 NORMALIZE = True
@@ -64,7 +66,7 @@ class TTSDL:
     None
 
   def saveTextToMp3(self, text, filename):
-    with suppress_output(suppress_stdout=True, suppress_stderr=False):
+    with suppress_output(suppress_stdout = False, suppress_stderr = False):
       wavs = self.engine.tts(text, speaker_idx="", style_wav="")
     numpy_array = np.asarray(wavs) 
     numpy_array = (numpy_array * 32767).astype('int16')
