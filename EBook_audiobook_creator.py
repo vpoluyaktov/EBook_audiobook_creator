@@ -15,7 +15,7 @@ from mutagen.mp3 import MP3
 from mutagen.mp4 import MP4
 from mutagen.mp4 import MP4Cover
 
-TTS_ENGINE = 'DL' # LOCAL, DL or DL_SILERO
+TTS_ENGINE = 'LOCAL' # LOCAL, DL or DL_SILERO
 
 # debug feature-toggles
 PRE_CLEANUP = True

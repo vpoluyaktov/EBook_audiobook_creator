@@ -2,9 +2,9 @@ import pyttsx3
 import os
 import re
 
-# VOICE_ID = 5    # 5:      ru_RU    Alyona Infovox iVox HQ
+VOICE_ID = 5    # 5:      ru_RU    Alyona Infovox iVox HQ
 # VOICE_ID = 44     # 44:     ru_RU    Milena
-VOICE_ID = 66     # 66:     en_US    Will Infovox iVox HQ
+# VOICE_ID = 66     # 66:     en_US    Will Infovox iVox HQ
 # VOICE_ID = 71     # 71:     ru_RU    Yuri
 # VOICE_ID = 24     # 24:     en_US    Heather Infovox iVox HQ
 

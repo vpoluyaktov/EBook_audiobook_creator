@@ -125,7 +125,7 @@ class FB2Parser:
   def _extract_cover_image(self):
     self.cover_image = None    
     cover_page = self._fb2.find('./description/title-info/coverpage/image')
-    if cover_page:
+    if cover_page != None:
       cover_image_name = cover_page.attrib['{http://www.w3.org/1999/xlink}href']
       if cover_image_name:
         for binary in self._fb2.findall('./binary'):
