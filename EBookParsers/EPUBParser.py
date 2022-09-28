@@ -63,6 +63,7 @@ class EPUBParser:
           break
     
     # get cover image
+    cover_href = None
     meta_tag = metadata.find('opf:meta', ns)
     if meta_tag is not None and meta_tag.attrib['name'] == 'cover':
       cover_id = meta_tag.attrib['content']  
