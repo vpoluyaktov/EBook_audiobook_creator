@@ -15,10 +15,8 @@ DEBUG = False
 MODELS = "../TTSEngines/Model/models.json"
 DICTIONARY_DIR = '../TTSEngines/Dict/TTSDL'
 MODEL_NAME = 'tts_models/en/ljspeech/tacotron2-DDC_ph'
-VOCODER_NAME = 'vocoder_models/en/ljspeech/hifigan_v2'
-VOICE_ID = 'hifigan_v2'
-#VOCODER_NAME = 'vocoder_models/en/ljspeech/univnet'
-#VOICE_ID = 'univnet'
+VOCODER_NAME = 'vocoder_models/en/ljspeech/univnet'
+VOICE_ID = 'univnet'
 USE_CUDA = False
 
 NOISE_REDUCTION = True
