@@ -3,6 +3,9 @@
 # On linux make sure that 'espeak' and 'ffmpeg' are installed
 
 import os
+#! pip install -U pip
+#! pip install TTS
+
 import sys
 import math
 import subprocess
@@ -15,7 +18,7 @@ from mutagen.mp3 import MP3
 from mutagen.mp4 import MP4
 from mutagen.mp4 import MP4Cover
 
-TTS_ENGINE = 'LOCAL' # LOCAL, DL or DL_SILERO
+TTS_ENGINE = 'DL' # LOCAL, DL or DL_SILERO
 
 # debug feature-toggles
 PRE_CLEANUP = True

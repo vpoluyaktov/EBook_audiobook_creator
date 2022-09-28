@@ -7,6 +7,7 @@ from pydub import AudioSegment
 from pydub import scipy_effects
 from TTS.utils.manage import ModelManager
 from TTS.utils.synthesizer import Synthesizer
+
 from utils.SuppressOutput import suppress_output
 
 DEBUG = False
@@ -14,7 +15,9 @@ DEBUG = False
 MODELS = "../TTSEngines/Model/models.json"
 DICTIONARY_DIR = '../TTSEngines/Dict/TTSDL'
 MODEL_NAME = 'tts_models/en/ljspeech/tacotron2-DDC_ph'
+#VOCODER_NAME = 'vocoder_models/en/ljspeech/hifigan_v2'
 VOCODER_NAME = 'vocoder_models/en/ljspeech/univnet'
+#VOICE_ID = 'hifigan_v2'
 VOICE_ID = 'univnet'
 USE_CUDA = False
 
@@ -32,8 +35,18 @@ class TTSDL:
     modelManager = ModelManager(MODELS)
     model_path, config_path, model_item = modelManager.download_model(MODEL_NAME)
     vocoder_path, vocoder_config_path, _ = modelManager.download_model(VOCODER_NAME)
-    speakers_file_path = None
-    self.engine =  Synthesizer(model_path, config_path, speakers_file_path, vocoder_path, vocoder_config_path, use_cuda=USE_CUDA)
+
+    self.engine =  Synthesizer(
+      tts_checkpoint = model_path, 
+      tts_config_path = config_path, 
+      tts_speakers_file = "", 
+      tts_languages_file = "",
+      vocoder_checkpoint = vocoder_path, 
+      vocoder_config = vocoder_config_path, 
+      encoder_checkpoint = "", 
+      encoder_config = "", 
+      use_cuda = USE_CUDA
+      )
            
     self.ebook_file_name = ebook_file_name
     self.load_pronunciation_dictionary()
@@ -67,7 +80,7 @@ class TTSDL:
 
   def saveTextToMp3(self, text, filename):
     with suppress_output(suppress_stdout = False, suppress_stderr = False):
-      wavs = self.engine.tts(text, speaker_idx="", style_wav="")
+      wavs = self.engine.tts(text)
     numpy_array = np.asarray(wavs) 
     numpy_array = (numpy_array * 32767).astype('int16')
     if NOISE_REDUCTION:

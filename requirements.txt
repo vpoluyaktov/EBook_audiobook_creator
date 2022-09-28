@@ -7,7 +7,7 @@ soundfile
 pydub
 scipy
 torch
-TTS==0.4.2
-torchaudio==0.10.0
+TTS
+torchaudio
 html2text
-gruut==2.0.4
+gruut
