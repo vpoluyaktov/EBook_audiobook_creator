@@ -1,6 +1,6 @@
 *.fb2
 *.epub
 TTSEngines/Dict/**/Book/*.dict
-TTSEngines/Dict/**/Voice/*.dict
+;TTSEngines/Dict/**/Voice/*.dict
 output/
 **/__pycache__/*

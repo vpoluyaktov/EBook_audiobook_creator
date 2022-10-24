@@ -2,6 +2,10 @@ import xml.etree.ElementTree as ET
 import re
 import base64
 
+# debug and feature-toggles
+PARSE_NOTES = False     # parse notes section at the end of the book
+PARSE_COMMENTS = False  # parse comments section at the end of the book
+
 class FB2Parser:
 
   def __init__(self):
@@ -32,12 +36,27 @@ class FB2Parser:
         chapter_text = self.tree_to_text(body.find('./title'))
         chapter_id = 0
         self.book_chapters.append({'chapter_title':chapter_title, 'chapter_id': chapter_id, 'chapter_text': chapter_text})
-      # note section at the end of a book
+
       if 'name' in body.attrib and body.attrib['name'] == "notes":
-        chapter_id = 0
-        chapter_title = self.parse_title(body.find('./title'), 0)
-        chapter_text = self.parse_notes(body)
-        self.book_chapters.append({'chapter_title':chapter_title, 'chapter_id': chapter_id, 'chapter_text': chapter_text})
+        # notes section at the end of a book
+        if PARSE_NOTES:
+          chapter_id = 0
+          chapter_title = self.parse_title(body.find('./title'), 0)
+          chapter_text = self.parse_notes(body)
+          self.book_chapters.append({'chapter_title':chapter_title, 'chapter_id': chapter_id, 'chapter_text': chapter_text})
+        else: 
+          continue
+      
+      elif 'name' in body.attrib and body.attrib['name'] == "comments":
+        # notes section at the end of a comment  
+        if PARSE_COMMENTS:
+          chapter_id = 0
+          chapter_title = self.parse_title(body.find('./title'), 0)
+          chapter_text = self.parse_comments(body)
+          self.book_chapters.append({'chapter_title':chapter_title, 'chapter_id': chapter_id, 'chapter_text': chapter_text})
+        else: 
+          continue
+
       elif body.find('./section'):
         TOC_depth = 0
         for chapter_id, section in enumerate(body.findall('./section')):
@@ -118,8 +137,15 @@ class FB2Parser:
     text = ""
     if ET is not None:
       for child in ET:     
-        text += (child.text if child.text else '') + (self.parse_notes(child)) + (child.tail if child.tail else '')     
-    return text  
+        text += (child.text if child.text else '') + (self.parse_notes(child)) + (child.tail if child.tail else '')
+    return text
+
+  def parse_comments(self, ET):
+    text = ""
+    if ET is not None:
+      for child in ET:     
+        text += (child.text if child.text else '') + (self.parse_notes(child)) + (child.tail if child.tail else '')
+    return text
 
   # extract cover image if exists
   def _extract_cover_image(self):

@@ -18,7 +18,7 @@ from mutagen.mp3 import MP3
 from mutagen.mp4 import MP4
 from mutagen.mp4 import MP4Cover
 
-TTS_ENGINE = 'DL' # LOCAL, DL or DL_SILERO
+TTS_ENGINE = 'LOCAL' # LOCAL, DL or DL_SILERO
 
 # debug feature-toggles
 PRE_CLEANUP = True
@@ -33,8 +33,8 @@ POST_CLEANUP = False
 EDIT_CHAPTER_NAMES = False
 TOC_MAX_DEPTH = 2
 
-BITRATE = "32k"
-SAMPLE_RATE = "22050"
+BITRATE = "128k"
+SAMPLE_RATE = "44100"
 BIT_DEPTH = "s16"
 OUTPUT_MODE="mono" # mono / stereo
 GAP_DURATION = 2 # Duration of a gaps between chapters
