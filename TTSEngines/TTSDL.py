@@ -7,6 +7,7 @@ from pydub import AudioSegment
 from pydub import scipy_effects
 from TTS.utils.manage import ModelManager
 from TTS.utils.synthesizer import Synthesizer
+from nltk.tokenize import sent_tokenize
 
 from utils.SuppressOutput import suppress_output
 
@@ -77,38 +78,49 @@ class TTSDL:
     None
 
   def saveTextToMp3(self, text, filename):
-    with suppress_output(suppress_stdout = False, suppress_stderr = False):
-      wavs = self.engine.tts(text)
-    numpy_array = np.asarray(wavs) 
-    numpy_array = (numpy_array * 32767).astype('int16')
-    if NOISE_REDUCTION:
-      try: 
-        noise_sample, rate = sf.read(NOISE_SAMLES_DIR + '/Voice/' + VOICE_ID + '.wav')
-        with suppress_output(suppress_stdout=True, suppress_stderr=True):
-          numpy_array = nr.reduce_noise(
-            y = numpy_array, 
-            sr = self.engine.output_sample_rate, 
-            y_noise = noise_sample,           
-            prop_decrease = 0.8,
-            n_fft = 512)
-      except Exception:
-        None
 
-    sound = AudioSegment(
-      numpy_array.tobytes(), 
-      frame_rate = self.engine.output_sample_rate,
-      sample_width = numpy_array.dtype.itemsize, 
-      channels=1
-    )
+    audio = None;
+    sentences = sent_tokenize(text)
+    for sentence in sentences:
 
-    if BANDPASS_FILTER:
-      sound = sound.band_pass_filter(low_cutoff_freq = LOW_CUTOFF_FREQ, high_cutoff_freq = HIGH_CUTOFF_FREQ)
-    if NORMALIZE:  
-      sound = sound.normalize()
-    # sound = sound.apply_gain_stereo()
+      with suppress_output(suppress_stdout = True, suppress_stderr = True):
+        wavs = self.engine.tts(sentence)
+      numpy_array = np.asarray(wavs) 
+
+      numpy_array = (numpy_array * 32767).astype('int16')
+      if NOISE_REDUCTION:
+        try: 
+          noise_sample, rate = sf.read(NOISE_SAMLES_DIR + '/Voice/' + VOICE_ID + '.wav')
+          with suppress_output(suppress_stdout=True, suppress_stderr=True):
+            numpy_array = nr.reduce_noise(
+              y = numpy_array, 
+              sr = self.engine.output_sample_rate, 
+              y_noise = noise_sample,                  
+              prop_decrease = 0.8,
+              n_fft = 512)
+        except Exception:
+          None
+
+      sound_clip = AudioSegment(
+        numpy_array.tobytes(), 
+        frame_rate = self.engine.output_sample_rate,
+        sample_width = numpy_array.dtype.itemsize, 
+        channels=1
+      )
+
+      if BANDPASS_FILTER:
+        sound_clip = sound_clip.band_pass_filter(low_cutoff_freq = LOW_CUTOFF_FREQ, high_cutoff_freq = HIGH_CUTOFF_FREQ)
+      if NORMALIZE:  
+        sound_clip = sound_clip.normalize()
+      # sound_clip = sound_clip.apply_gain_stereo()
+
+      if audio == None:
+        audio = sound_clip
+      else:
+        audio += sound_clip
 
     with open(filename, 'wb') as out_f:
-      sound.export(out_f, format='mp3')
+      audio.export(out_f, format='mp3')
 
 
   def fix_pronunciation(self, text):

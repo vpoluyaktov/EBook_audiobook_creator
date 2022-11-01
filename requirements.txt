@@ -11,3 +11,4 @@ TTS==0.8.0
 torchaudio
 html2text
 gruut
+nltk
