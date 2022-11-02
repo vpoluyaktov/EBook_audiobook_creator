@@ -83,7 +83,7 @@ class TTSDL:
     sentences = nltk.tokenize.sent_tokenize(text)
     for sentence in sentences:
 
-      with suppress_output(suppress_stdout = False, suppress_stderr = False):
+      with suppress_output(suppress_stdout = not DEBUG, suppress_stderr = not DEBUG):
         wavs = self.engine.tts(sentence)
       numpy_array = np.asarray(wavs)
 
@@ -91,7 +91,7 @@ class TTSDL:
       if NOISE_REDUCTION:
         try:
           noise_sample, rate = sf.read(NOISE_SAMLES_DIR + '/Voice/' + VOICE_ID + '.wav')
-          with suppress_output(suppress_stdout=True, suppress_stderr=True):
+          with suppress_output(suppress_stdout = not DEBUG, suppress_stderr = not DEBUG):
             numpy_array = nr.reduce_noise(
               y = numpy_array,
               sr = self.engine.output_sample_rate,
