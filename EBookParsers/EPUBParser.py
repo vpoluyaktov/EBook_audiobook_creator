@@ -18,12 +18,12 @@ class EPUBParser:
     self.book_chapters = []
 
   def parse(self, filename):
-    file = zipfile.ZipFile(filename,"r");  
+    file = zipfile.ZipFile(filename,"r");
     root_file = self.parse_container_xml(file.read("META-INF/container.xml"))
 
     content_dir = os.path.split(root_file)[0]
-    if content_dir != "": 
-      content_dir = content_dir+"/"   
+    if content_dir != "":
+      content_dir = content_dir+"/"
 
     toc, cover_href = self.parse_root_file(file.read(root_file).decode("utf-8"))
     self.book_chapters = self.parse_toc(file.read(content_dir + toc).decode("utf-8"))
@@ -61,16 +61,16 @@ class EPUBParser:
         and item[1].attrib["id"] in ['ncx', 'toc', 'ncxtoc']:
           toc = item[1].attrib["href"]
           break
-    
+
     # get cover image
     cover_href = None
     meta_tag = metadata.find('opf:meta', ns)
     if meta_tag is not None and meta_tag.attrib['name'] == 'cover':
-      cover_id = meta_tag.attrib['content']  
+      cover_id = meta_tag.attrib['content']
       if cover_id != "":
         for item in enumerate(manifest.findall('opf:item', ns)):
           if item[1].attrib["id"] == cover_id \
-            and item[1].attrib["media-type"] in ['image/jpeg', 'image/png']: 
+            and item[1].attrib["media-type"] in ['image/jpeg', 'image/png']:
               cover_href = item[1].attrib["href"]
               break
 
@@ -101,7 +101,7 @@ class EPUBParser:
   def fetch_chapters_text(self, chapters, file, content_dir):
     converter = html2text.HTML2Text()
     converter.body_width = 0
-    converter.ignore_tables = True 
+    converter.ignore_tables = True
     converter.ignore_emphasis = True
     converter.ignore_links = True
     converter.images_to_alt = True
@@ -116,7 +116,7 @@ class EPUBParser:
       div_pos_end = None
       # find chapter start position
       if chapter_anchor:
-        id_pos_start = chapter_html.find('id="' + chapter_anchor + '"') 
+        id_pos_start = chapter_html.find('id="' + chapter_anchor + '"')
         if id_pos_start != -1:
           div_pos_start = chapter_html.rfind('<', 0, id_pos_start)
 
@@ -126,19 +126,19 @@ class EPUBParser:
         next_chapter_content_source = next_chapter['chapter_content_source']
         next_chapter_file_name, next_chapter_anchor = next_chapter_content_source.split('#')
         if chapter_file_name == next_chapter_file_name:
-          id_pos_end = chapter_html.find('id="' + next_chapter_anchor + '"') 
+          id_pos_end = chapter_html.find('id="' + next_chapter_anchor + '"')
           if id_pos_end != -1:
             div_pos_end = chapter_html.rfind('<', 0, id_pos_end)
-      # cut chapter from a big html      
+      # cut chapter from a big html
       chapter_html = chapter_html[div_pos_start:div_pos_end]
       chapter_html = self.cleanup_html(chapter_html)
-      chapter_text =  converter.handle(chapter_html)      
+      chapter_text =  converter.handle(chapter_html)
       chapter['chapter_text'] = self.cleanup_text(chapter_text)
-    return chapters  
+    return chapters
 
   def cleanup_html(self, html):
     # remove images alt tag
-    html = re.sub(r'alt=".*"', '', html) 
+    html = re.sub(r'alt=".*"', '', html)
     # cleanup some special characters
     cleanup_dictionary = [ ('\u00A0', ' ')]
     for tuple in cleanup_dictionary:
@@ -147,9 +147,9 @@ class EPUBParser:
 
   def cleanup_text(self, text):
     # remove quote
-    text = re.sub(r'>', '', text) 
+    text = re.sub(r'>', '', text)
     # remove headers
-    text = re.sub(r'#+ ', ' ', text) 
+    text = re.sub(r'#+ ', ' ', text)
     # add dot at the end of each paragraph
     paragraphs = ""
     for paragraph in text.split('\n'):
@@ -161,22 +161,22 @@ class EPUBParser:
     cleanup_dictionary = [('\.', '.')]
     for tuple in cleanup_dictionary:
       text = text.replace(tuple[0], tuple[1])
-    return text  
+    return text
 
   def add_period(self, text):
     if text != None and text.strip() != '':
-      if text.strip()[-1] != '.' and text.strip()[-1] != '?' and text.strip()[-1] != '?' and text.strip()[-1] != ':' and text.strip()[-3:] != '...':
+      if text.strip()[-1] != '.' and text.strip()[-1] != '?' and text.strip()[-1] != '!' and text.strip()[-1] != ':' and text.strip()[-3:] != '...'  and text.strip()[-1] != '"' and text.strip()[-1] != '”':
         text = text.strip() +'. '
-    return text      
+    return text
 
   def save_text_to_file(self, text, filename):
     file = open(filename, "w")
     file.write(text)
-    file.close  
+    file.close
 
   def save_cover_image_to_file(self, path):
     cover_file_name = path + self.cover_image_name
     file = open(cover_file_name, "wb")
     file.write(self.cover_image)
-    file.close 
-    return cover_file_name  
+    file.close
+    return cover_file_name

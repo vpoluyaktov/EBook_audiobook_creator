@@ -93,12 +93,12 @@ if __name__ == '__main__':
 
   if len(sys.argv) < 2:
     ebook_file_name = input("Enter an ebook file name: ")
-  else:  
+  else:
     ebook_file_name = sys.argv[1];
 
-  file_extension = os.path.splitext(ebook_file_name)[1]      
+  file_extension = os.path.splitext(ebook_file_name)[1]
   if file_extension == '.fb2':
-    from EBookParsers.FB2Parser import FB2Parser 
+    from EBookParsers.FB2Parser import FB2Parser
     parser = FB2Parser()
   elif file_extension == '.epub':
     from EBookParsers.EPUBParser import EPUBParser
@@ -106,8 +106,8 @@ if __name__ == '__main__':
   else:
     print("This ebook format is not supported yet.")
     exit()
-      
-  print("\nParsing {0} file...".format(file_extension))    
+
+  print("\nParsing {0} file...".format(file_extension))
   parser.TOC_max_depth = TOC_MAX_DEPTH
   parser.parse(ebook_file_name)
 
@@ -142,7 +142,7 @@ if __name__ == '__main__':
     print(" ")
   elif TTS_ENGINE == 'DL_SILERO':
     from TTSEngines.TTSDL_SILERO import TTSDL
-    tts = TTSDL(ebook_file_name)  
+    tts = TTSDL(ebook_file_name)
 
   chapter_no = 1
   mp3_file_names = []
@@ -150,11 +150,11 @@ if __name__ == '__main__':
   for chapter in parser.book_chapters:
     print('Narrating chapter {0}'.format(chapter['chapter_title']))
     filename = 'chapter_' + str(chapter_no)
-    text = tts.fix_pronunciation(chapter['chapter_text'])    
+    text = tts.fix_pronunciation(chapter['chapter_text'])
     parser.save_text_to_file(text, 'tmp/' + filename + '.txt')
     if NARRATE_CHAPTERS:
-      tts.saveTextToMp3(text, 'tmp/' + filename + '.mp3')   
-    mp3_file_names.append(filename + '.mp3') 
+      tts.saveTextToMp3(text, 'tmp/' + filename + '.mp3')
+    mp3_file_names.append(filename + '.mp3')
     chapter_names.append(chapter['chapter_title'])
     chapter_no += 1
 
