@@ -1,9 +1,12 @@
+import io
 import os
 import re
 import numpy as np
 import noisereduce as nr
 import soundfile as sf
 import nltk
+from contextlib import redirect_stdout
+from contextlib import redirect_stderr
 from pydub import AudioSegment
 from pydub import scipy_effects
 from TTS.utils.manage import ModelManager
@@ -26,7 +29,7 @@ LOWER_UPPER_CASE_WORDS = True
 NOISE_REDUCTION = True
 BANDPASS_FILTER = True
 LOW_CUTOFF_FREQ = 20
-HIGH_CUTOFF_FREQ = 8000
+HIGH_CUTOFF_FREQ = 5000
 NORMALIZE = True
 
 NOISE_SAMLES_DIR='../TTSEngines/NoiseSamples/TTSDL'
@@ -37,6 +40,10 @@ class TTSDL:
     self.ebook_file_name = ebook_file_name
     self.load_pronunciation_dictionary()
 
+    # Natural language processor
+    nltk.download('punkt', quiet=True)
+
+    # TTS DL engine initialization
     with suppress_output(suppress_stdout = not DEBUG, suppress_stderr = not SHOW_ERRORS):
       modelManager = ModelManager(MODELS)
       model_path, config_path, model_item = modelManager.download_model(MODEL_NAME)
@@ -53,9 +60,7 @@ class TTSDL:
         encoder_config = "",
         use_cuda = USE_CUDA
         )
-    with suppress_output(suppress_stdout = not DEBUG, suppress_stderr = not DEBUG):    
-      nltk.download('punkt')
-
+    self.narrate = self.output_interceptor(self.engine.tts) # output interceptor
 
   def load_pronunciation_dictionary(self):
 
@@ -84,7 +89,6 @@ class TTSDL:
     None
 
   def saveTextToMp3(self, text, filename):
-
     audio = None;
     sentences = nltk.tokenize.sent_tokenize(text)
     for sentence in sentences:
@@ -93,11 +97,10 @@ class TTSDL:
         sentence_chunks = nltk.regexp_tokenize(sentence, pattern=r'[,\.]\s*', gaps=True)
       else:
         sentence_chunks = [sentence] 
-      for chunk in sentence_chunks:  
-        with suppress_output(suppress_stdout = not DEBUG, suppress_stderr = not SHOW_ERRORS):
-          wavs = self.engine.tts(chunk)
+      for sentence_chunk in sentence_chunks:
+        # TTS DL narrating 
+        wavs = self.narrate(sentence_chunk)
         numpy_array = np.asarray(wavs)
-
         numpy_array = (numpy_array * 32767).astype('int16')
         if NOISE_REDUCTION:
           try:
@@ -141,3 +144,15 @@ class TTSDL:
     if LOWER_UPPER_CASE_WORDS:
       text = re.sub(r'[A-Z]+', lambda m: m.group(0).capitalize(), text)
     return text
+
+  def output_interceptor(self, func):
+    # Decorator for stdout and stderr outputs intecept and parsing 
+    def wrap(*args, **kwargs):
+      stdout = io.StringIO()
+      stderr = io.StringIO()
+      with redirect_stdout(stdout), redirect_stderr(stderr):
+        result = func(*args, **kwargs)
+      if SHOW_ERRORS and stderr.getvalue(): print(stderr.getvalue())  
+      if DEBUG and stdout.getvalue(): print(stdout.getvalue())
+      return result
+    return wrap
