@@ -107,15 +107,16 @@ if __name__ == '__main__':
     print("This ebook format is not supported yet.")
     exit()
 
-  print("\nParsing {0} file...".format(file_extension))
+  print("Found {0} file\n".format(file_extension))
   parser.TOC_max_depth = TOC_MAX_DEPTH
   parser.parse(ebook_file_name)
 
   book_author = parser.book_author
   book_title = parser.book_title
 
-  print("\n\nProcessing book:\n{0} - {1}\n".format(book_author, book_title))
-  print("Annotation:\n\n", parser.book_annotation, '\n\n')
+  print("Processing book:\n{0} - {1}\n".format(book_author, book_title))
+  if parser.book_annotation:
+    print("Annotation:\n", parser.book_annotation, '\n')
 
   # clean/create output dir
   if PRE_CLEANUP:
