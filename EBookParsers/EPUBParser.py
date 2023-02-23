@@ -25,8 +25,8 @@ class EPUBParser:
     if content_dir != "":
       content_dir = content_dir+"/"
 
-    toc, cover_href = self.parse_root_file(file.read(root_file).decode("utf-8"))
-    self.book_chapters = self.parse_toc(file.read(content_dir + toc).decode("utf-8"))
+    toc, toc_media_type, cover_href = self.parse_root_file(file.read(root_file).decode("utf-8"))
+    self.book_chapters = self.parse_toc(file.read(content_dir + toc).decode("utf-8"), toc_media_type)
     self.book_chapters = self.fetch_chapters_text(self.book_chapters, file, content_dir)
     if cover_href:
       self.cover_image = file.read(content_dir + cover_href)
@@ -56,47 +56,81 @@ class EPUBParser:
 
     toc = None
     manifest = root.find('opf:manifest', ns)
-    for item in enumerate(manifest.findall('opf:item', ns)):
-      if item[1].attrib["media-type"] == "application/x-dtbncx+xml" \
-        and item[1].attrib["id"] in ['ncx', 'toc', 'ncxtoc']:
-          toc = item[1].attrib["href"]
+    for index, item in enumerate(manifest.findall('opf:item', ns)):
+      if item.attrib["media-type"] in ['application/x-dtbncx+xml', 'application/xhtml+xml'] \
+        and item.attrib["id"] in ['ncx', 'toc', 'ncxtoc']:
+          toc = item.attrib["href"]
+          toc_media_type = item.attrib["media-type"]
           break
 
     # get cover image
     cover_href = None
-    meta_tag = metadata.find('opf:meta', ns)
-    if meta_tag is not None and meta_tag.attrib['name'] == 'cover':
-      cover_id = meta_tag.attrib['content']
-      if cover_id != "":
-        for item in enumerate(manifest.findall('opf:item', ns)):
-          if item[1].attrib["id"] == cover_id \
-            and item[1].attrib["media-type"] in ['image/jpeg', 'image/png']:
-              cover_href = item[1].attrib["href"]
-              break
+    for index, meta_tag in enumerate(metadata.findall('opf:meta', ns)):
+      if meta_tag is not None and "name" in meta_tag.attrib and meta_tag.attrib['name'] == 'cover':
+        cover_id = meta_tag.attrib['content']
+        if cover_id != "":
+          for index, item in enumerate(manifest.findall('opf:item', ns)):
+            if item.attrib["id"] == cover_id \
+              and item.attrib["media-type"] in ['image/jpeg', 'image/png']:
+                cover_href = item.attrib["href"]
+                break
+        break
 
-    return toc, cover_href
+    return toc, toc_media_type, cover_href
 
-  def parse_toc(self, toc_file_xml):
+  def parse_toc(self, toc_content, toc_media_type):
+    if toc_media_type == 'application/x-dtbncx+xml':
+      chapters = self.parse_toc_ncx(toc_content)
+    elif toc_media_type == 'application/xhtml+xml':
+      chapters = self.parse_toc_xhtml(toc_content)
+    else:
+      raise SystemExit('Unknown type of TOC file')
+    return chapters
+
+  def parse_toc_ncx(self, toc_content):
     ns = {'ncx': 'http://www.daisy.org/z3986/2005/ncx/'}
     chapters = []
     TOC_depth = 0
-    root = ET.fromstring(toc_file_xml)
+    root = ET.fromstring(toc_content)
     nav_map = root.find('ncx:navMap', ns)
-    for nav_point in enumerate(nav_map.findall('ncx:navPoint', ns)):
-      self.parse_nav_point(nav_point, chapters, TOC_depth)
+    for index, nav_point in enumerate(nav_map.findall('ncx:navPoint', ns)):
+      self.parse_nav_point_ncx(nav_point, chapters, TOC_depth)
     return chapters
 
-  def parse_nav_point(self, nav_point, chapters, TOC_depth):
+  def parse_nav_point_ncx(self, nav_point, chapters, TOC_depth):
     TOC_depth += 1
     ns = {'ncx': 'http://www.daisy.org/z3986/2005/ncx/'}
-    chapter_id = nav_point[1].attrib['id']
-    chapter_title = nav_point[1].find('ncx:navLabel/ncx:text', ns).text
+    chapter_id = nav_point.attrib['id']
+    chapter_title = nav_point.find('ncx:navLabel/ncx:text', ns).text
     chapter_title = chapter_title.rjust(TOC_depth * 4 + len(chapter_title), '\u00A0')
-    chapter_content_source = nav_point[1].find('ncx:content', ns).attrib['src']
+    chapter_content_source = nav_point.find('ncx:content', ns).attrib['src']
     chapters.append({'chapter_title': chapter_title, 'TOC_depth': TOC_depth, 'chapter_id': chapter_id, 'chapter_content_source': chapter_content_source})
     if TOC_depth < self.TOC_max_depth:
-      for nav_point in enumerate(nav_point[1].findall('ncx:navPoint', ns)):
-        self.parse_nav_point(nav_point, chapters, TOC_depth)
+      for index, nav_point in enumerate(nav_point.findall('ncx:navPoint', ns)):
+        self.parse_nav_point_ncx(nav_point, chapters, TOC_depth)
+
+  def parse_toc_xhtml(self, toc_content):
+    ns = {'html': 'http://www.w3.org/1999/xhtml', 'epub': 'http://www.idpf.org/2007/ops'}
+    chapters = []
+    TOC_depth = 0
+    root = ET.fromstring(toc_content)
+    nav_map = root.find('html:body/html:nav', ns)
+    for index, nav_point in enumerate(nav_map.findall('html:ol/html:li', ns)):
+      self.parse_nav_point_xhtml(nav_point, chapters, TOC_depth)
+    return chapters
+
+  def parse_nav_point_xhtml(self, nav_point, chapters, TOC_depth):
+    TOC_depth += 1
+    ns = {'html': 'http://www.w3.org/1999/xhtml', 'epub': 'http://www.idpf.org/2007/ops'}
+    nav_href = nav_point.find('html:a', ns)
+    chapter_id = nav_href.attrib['id']
+    chapter_title = nav_href.text
+    chapter_title = chapter_title.rjust(TOC_depth * 4 + len(chapter_title), '\u00A0')
+    chapter_content_source = nav_href.attrib['href']
+    chapters.append({'chapter_title': chapter_title, 'TOC_depth': TOC_depth, 'chapter_id': chapter_id, 'chapter_content_source': chapter_content_source})
+    if TOC_depth < self.TOC_max_depth:
+      for index, nav_point in enumerate(nav_point.findall('html:ol/html:li', ns)):
+        self.parse_nav_point_xhtml(nav_point, chapters, TOC_depth)
 
   def fetch_chapters_text(self, chapters, file, content_dir):
     converter = html2text.HTML2Text()
