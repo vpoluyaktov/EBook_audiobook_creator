@@ -27,10 +27,16 @@ SENTENCE_MAX_LENGTH = 250
 LOWER_UPPER_CASE_WORDS = True
 
 NOISE_REDUCTION = True
-BANDPASS_FILTER = True
-LOW_CUTOFF_FREQ = 20
-HIGH_CUTOFF_FREQ = 4000
 NORMALIZE = True
+BANDPASS_FILTER = True
+EQ_FILTER = True
+LOW_CUTOFF_FREQ = 20
+HIGH_CUTOFF_FREQ = 7000
+EQ_FILTER_PROFILE = [
+  {'freq': 6000, 'bandwidth': 100, 'gain': -40}, 
+  # {'freq': 5000, 'bandwidth': 100, 'gain': 10}
+]
+
 
 NOISE_SAMLES_DIR='../TTSEngines/NoiseSamples/TTSDL'
 
@@ -61,29 +67,6 @@ class TTSDL:
         use_cuda = USE_CUDA
         )
     self.narrate = self.output_interceptor(self.engine.tts) # output interceptor
-
-  def load_pronunciation_dictionary(self):
-
-    dict_default = DICTIONARY_DIR + '/Default.dict'
-    dict_voice = DICTIONARY_DIR + '/Voice/' + VOICE_ID + '.dict'
-    dict_book = DICTIONARY_DIR + '/Book/' + os.path.splitext(os.path.basename(self.ebook_file_name))[0] + '.dict'
-    dict_files = [dict_default, dict_voice, dict_book]
-
-    self.dictionary = []
-    for dict_file_name in dict_files:
-      dict_file = None
-      try:
-        dict_file = open(dict_file_name, 'r')
-        line = dict_file.readline()
-        while line:
-          tuple = line.split("~")
-          self.dictionary.append(tuple)
-          line = dict_file.readline()
-      except Exception:
-        None
-      finally:
-        if dict_file:
-          dict_file.close()
 
   def getVoicesList(self):
     None
@@ -123,7 +106,10 @@ class TTSDL:
         )
 
         if BANDPASS_FILTER:
-          sound_clip = sound_clip.band_pass_filter(low_cutoff_freq = LOW_CUTOFF_FREQ, high_cutoff_freq = HIGH_CUTOFF_FREQ)
+          sound_clip = sound_clip.band_pass_filter(LOW_CUTOFF_FREQ, HIGH_CUTOFF_FREQ, 10)
+        if EQ_FILTER:
+          for tune in EQ_FILTER_PROFILE:
+            sound_clip = self.eq_filter(sound_clip, tune['freq'], tune['bandwidth'], tune['gain'])  
         if NORMALIZE:
           sound_clip = sound_clip.normalize()
         # sound_clip = sound_clip.apply_gain_stereo()
@@ -136,6 +122,27 @@ class TTSDL:
     with open(filename, 'wb') as out_f:
       audio.export(out_f, format='mp3')
 
+  def load_pronunciation_dictionary(self):
+    dict_default = DICTIONARY_DIR + '/Default.dict'
+    dict_voice = DICTIONARY_DIR + '/Voice/' + VOICE_ID + '.dict'
+    dict_book = DICTIONARY_DIR + '/Book/' + os.path.splitext(os.path.basename(self.ebook_file_name))[0] + '.dict'
+    dict_files = [dict_default, dict_voice, dict_book]
+
+    self.dictionary = []
+    for dict_file_name in dict_files:
+      dict_file = None
+      try:
+        dict_file = open(dict_file_name, 'r')
+        line = dict_file.readline()
+        while line:
+          tuple = line.split("~")
+          self.dictionary.append(tuple)
+          line = dict_file.readline()
+      except Exception:
+        None
+      finally:
+        if dict_file:
+          dict_file.close()
 
   def fix_pronunciation(self, text):
     for tuple in self.dictionary:
@@ -156,3 +163,17 @@ class TTSDL:
       if DEBUG and stdout.getvalue(): print(stdout.getvalue())
       return result
     return wrap
+  
+  def eq_filter(self, seg, focus_freq = 1000, bandwidth = 100, gain_dB = 0, order = 2):
+    if gain_dB >= 0:
+      sec = seg.band_pass_filter(focus_freq - bandwidth/2, focus_freq + bandwidth/2, order)
+      seg = seg.overlay(sec + gain_dB)
+      return seg
+
+    if gain_dB < 0:
+      seg_high = seg.high_pass_filter(focus_freq + bandwidth/2, order)
+      seg_low  = seg.low_pass_filter(focus_freq - bandwidth/2, order)
+      seg = seg + (gain_dB)
+      seg = seg.overlay(seg_high) 
+      seg = seg.overlay(seg_low)
+      return seg    
