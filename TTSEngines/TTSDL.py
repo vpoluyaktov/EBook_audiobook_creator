@@ -1,20 +1,15 @@
-import io
+
 import os
 import re
 import numpy as np
-import noisereduce as nr
-import soundfile as sf
 import nltk
-from contextlib import redirect_stdout
-from contextlib import redirect_stderr
 from pydub import AudioSegment
-from pydub import scipy_effects
 from TTS.utils.manage import ModelManager
 from TTS.utils.synthesizer import Synthesizer
-from utils.SuppressOutput import suppress_output
+from utils.AudioProcessor import AudioProcessor
+from utils.ConsoleLogger import ConsoleLogger
 
 DEBUG = False
-SHOW_ERRORS = True
 
 MODELS = "../TTSEngines/Model/models.json"
 DICTIONARY_DIR = '../TTSEngines/Dict/TTSDL'
@@ -33,29 +28,30 @@ EQ_FILTER = True
 LOW_CUTOFF_FREQ = 20
 HIGH_CUTOFF_FREQ = 7000
 EQ_FILTER_PROFILE = [
-  {'freq': 6000, 'bandwidth': 100, 'gain': -40}, 
-  # {'freq': 5000, 'bandwidth': 100, 'gain': 10}
+  {'freq': 6150, 'bandwidth': 100,  'gain': -25, 'rolloff': 2},
+  {'freq': 3000, 'bandwidth': 2500, 'gain': 0,   'rolloff': 2}, 
 ]
-
 
 NOISE_SAMLES_DIR='../TTSEngines/NoiseSamples/TTSDL'
 
 class TTSDL:
   def __init__(self, ebook_file_name):
-
     self.ebook_file_name = ebook_file_name
+    
+    self.logger = ConsoleLogger(DEBUG)
+    self.audio_processor = AudioProcessor(self.logger)
     self.load_pronunciation_dictionary()
 
     # Natural language processor
     nltk.download('punkt', quiet=True)
 
     # TTS DL engine initialization
-    with suppress_output(suppress_stdout = not DEBUG, suppress_stderr = not SHOW_ERRORS):
+    with self.logger:
       modelManager = ModelManager(MODELS)
       model_path, config_path, model_item = modelManager.download_model(MODEL_NAME)
       vocoder_path, vocoder_config_path, _ = modelManager.download_model(VOCODER_NAME)
 
-      self.engine =  Synthesizer(
+      self.tts_engine =  Synthesizer(
         tts_checkpoint = model_path,
         tts_config_path = config_path,
         tts_speakers_file = "",
@@ -66,13 +62,15 @@ class TTSDL:
         encoder_config = "",
         use_cuda = USE_CUDA
         )
-    self.narrate = self.output_interceptor(self.engine.tts) # output interceptor
+    self.narrate = self.logger.output_interceptor(self.tts_engine.tts) # output interceptor
 
   def getVoicesList(self):
     None
 
   def saveTextToMp3(self, text, filename):
     audio = None;
+
+    # Split the text onto sentences 
     sentences = nltk.tokenize.sent_tokenize(text)
     for sentence in sentences:
       # TTS Engine crashes on narrating of long sentences, so let's try to split them by a comma
@@ -83,41 +81,32 @@ class TTSDL:
       for sentence_chunk in sentence_chunks:
         # TTS DL narrating 
         wavs = self.narrate(sentence_chunk)
-        numpy_array = np.asarray(wavs)
-        numpy_array = (numpy_array * 32767).astype('int16')
-        if NOISE_REDUCTION:
-          try:
-            noise_sample, rate = sf.read(NOISE_SAMLES_DIR + '/Voice/' + VOICE_ID + '.wav')
-            with suppress_output(suppress_stdout = not DEBUG, suppress_stderr = not SHOW_ERRORS):
-              numpy_array = nr.reduce_noise(
-                y = numpy_array,
-                sr = self.engine.output_sample_rate,
-                y_noise = noise_sample,
-                prop_decrease = 0.8,
-                n_fft = 512)
-          except Exception:
-            None
 
-        sound_clip = AudioSegment(
-          numpy_array.tobytes(),
-          frame_rate = self.engine.output_sample_rate,
-          sample_width = numpy_array.dtype.itemsize,
+        # convert wav to numpy array
+        sound_np_array = (np.asarray(wavs) * 32767).astype('int16')
+        if NOISE_REDUCTION:
+          self.audio_processor.noise_filter(sound_np_array, self.tts_engine.output_sample_rate, NOISE_SAMLES_DIR, VOICE_ID)
+
+        # convert numpy array to AudioSegment
+        audio_segment = AudioSegment(
+          sound_np_array.tobytes(),
+          frame_rate = self.tts_engine.output_sample_rate,
+          sample_width = sound_np_array.dtype.itemsize,
           channels=1
         )
 
         if BANDPASS_FILTER:
-          sound_clip = sound_clip.band_pass_filter(LOW_CUTOFF_FREQ, HIGH_CUTOFF_FREQ, 10)
+          audio_segment = self.audio_processor.band_pass_filter(audio_segment, LOW_CUTOFF_FREQ, HIGH_CUTOFF_FREQ, 10)
         if EQ_FILTER:
-          for tune in EQ_FILTER_PROFILE:
-            sound_clip = self.eq_filter(sound_clip, tune['freq'], tune['bandwidth'], tune['gain'])  
+          audio_segment = self.audio_processor.eq_filter(audio_segment, EQ_FILTER_PROFILE)
         if NORMALIZE:
-          sound_clip = sound_clip.normalize()
-        # sound_clip = sound_clip.apply_gain_stereo()
+          audio_segment = self.audio_processor.normalize(audio_segment)
+        # audio_segment = self.audio_processor.apply_gain_stereo()
 
         if audio == None:
-          audio = sound_clip
+          audio = audio_segment
         else:
-          audio += sound_clip
+          audio += audio_segment
 
     with open(filename, 'wb') as out_f:
       audio.export(out_f, format='mp3')
@@ -152,28 +141,5 @@ class TTSDL:
       text = re.sub(r'[A-Z]+', lambda m: m.group(0).capitalize(), text)
     return text
 
-  def output_interceptor(self, func):
-    # Decorator for stdout and stderr outputs intecept and parsing 
-    def wrap(*args, **kwargs):
-      stdout = io.StringIO()
-      stderr = io.StringIO()
-      with redirect_stdout(stdout), redirect_stderr(stderr):
-        result = func(*args, **kwargs)
-      if SHOW_ERRORS and stderr.getvalue(): print(stderr.getvalue())  
-      if DEBUG and stdout.getvalue(): print(stdout.getvalue())
-      return result
-    return wrap
   
-  def eq_filter(self, seg, focus_freq = 1000, bandwidth = 100, gain_dB = 0, order = 2):
-    if gain_dB >= 0:
-      sec = seg.band_pass_filter(focus_freq - bandwidth/2, focus_freq + bandwidth/2, order)
-      seg = seg.overlay(sec + gain_dB)
-      return seg
-
-    if gain_dB < 0:
-      seg_high = seg.high_pass_filter(focus_freq + bandwidth/2, order)
-      seg_low  = seg.low_pass_filter(focus_freq - bandwidth/2, order)
-      seg = seg + (gain_dB)
-      seg = seg.overlay(seg_high) 
-      seg = seg.overlay(seg_low)
-      return seg    
+   
