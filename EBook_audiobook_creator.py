@@ -133,17 +133,17 @@ if __name__ == '__main__':
 
   if TTS_ENGINE == 'LOCAL':
     from TTSEngines.TTSLocal import TTSLocal
-    tts = TTSLocal(ebook_file_name)
+    tts_engine = TTSLocal(ebook_file_name)
     # tts.getVoicesList()
-    tts.VOICE_ID = 5
+    tts_engine.VOICE_ID = 5
   elif TTS_ENGINE == 'DL':
     print("Loading TTS Neural Network...")
     from TTSEngines.TTSDL import TTSDL
-    tts = TTSDL(ebook_file_name)
+    tts_engine = TTSDL(ebook_file_name)
     print(" ")
   elif TTS_ENGINE == 'DL_SILERO':
     from TTSEngines.TTSDL_SILERO import TTSDL
-    tts = TTSDL(ebook_file_name)
+    tts_engine = TTSDL(ebook_file_name)
 
   chapter_no = 1
   mp3_file_names = []
@@ -151,10 +151,10 @@ if __name__ == '__main__':
   for chapter in parser.book_chapters:
     print('Narrating chapter {0}'.format(chapter['chapter_title']))
     filename = 'chapter_' + str(chapter_no)
-    text = tts.fix_pronunciation(chapter['chapter_text'])
+    text = tts_engine.fix_pronunciation(chapter['chapter_text'])
     parser.save_text_to_file(text, 'tmp/' + filename + '.txt')
     if NARRATE_CHAPTERS:
-      tts.saveTextToMp3(text, 'tmp/' + filename + '.mp3')
+      tts_engine.saveTextToMp3(text, 'tmp/' + filename + '.mp3')
     mp3_file_names.append(filename + '.mp3')
     chapter_names.append(chapter['chapter_title'])
     chapter_no += 1
